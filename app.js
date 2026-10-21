@@ -6,7 +6,9 @@ if (window.Chart) { Chart.defaults.font.family = "'Poppins', Arial, sans-serif";
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const nf = (d) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits:d, maximumFractionDigits:d });
 const pct = (v, d = 0) => v === null || v === undefined ? '—' : nf(d).format((Math.abs(v) < 5e-7 ? 0 : v) * 100).replace(/^-(0(,0+)?)$/, '$1') + '%';
-const fmtV = (v, r) => v === null || v === undefined ? '' : nf(r && r.formato === 'TRES CASAS' ? 3 : 2).format(v);
+// casas decimais "inteligentes": valores pequenos (ex.: 0,0001) não viram 0,00
+const fmtV = (v, r) => { if (v === null || v === undefined) return ''; const base = r && r.formato === 'TRES CASAS' ? 3 : 2, a = Math.abs(v);
+  const d = a > 0 && a < 1 ? Math.min(6, Math.max(base, Math.ceil(-Math.log10(a)) + 1)) : base; return nf(d).format(v); };
 const LIM = C.limiteMes(new Date());
 
 // ---------- carga ----------
@@ -112,10 +114,55 @@ function atgChart(id, rows) {
       plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c => c.dataset.label + ': ' + pct(c.raw, 1) } } } },
     plugins:[labelPlugin] });
 }
-const labelPlugin = { id:'lbl', afterDatasetsDraw(ch) { const ctx = ch.ctx; ctx.save(); ctx.font = '600 11px Segoe UI,Arial'; ctx.fillStyle = '#3e3e3e'; ctx.textAlign = 'center';
-  ch.data.datasets.forEach((ds, di) => { if (ds.type === 'line' || ch.options.indexAxis === 'y') return; ch.getDatasetMeta(di).data.forEach((el, i) => { const v = ds.data[i]; if (v === null || v === undefined) return; ctx.fillText(ds.fmt ? ds.fmt(v) : pct(v, 1), el.x, el.y - 4); }); });
+const labelPlugin = { id:'lbl', afterDatasetsDraw(ch) { const ctx = ch.ctx; ctx.save(); ctx.font = "600 11px 'Poppins', Arial, sans-serif"; ctx.fillStyle = '#3e3e3e'; ctx.textAlign = 'center';
+  ch.data.datasets.forEach((ds, di) => { if (ds.type === 'line' || ch.options.indexAxis === 'y') return; ch.getDatasetMeta(di).data.forEach((el, i) => { const v = ds.data[i]; if (v === null || v === undefined || (el.width && el.width < 30)) return; { const t = ds.fmt ? ds.fmt(v) : pct(v, 1); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.strokeText(t, el.x, el.y - 5); ctx.fillText(t, el.x, el.y - 5); } }); });
   if (ch.options.indexAxis === 'y') { ctx.textAlign = 'left'; ch.data.datasets.forEach((ds, di) => ch.getDatasetMeta(di).data.forEach((el, i) => ctx.fillText(pct(ds.data[i], 1), el.x + 4, el.y + 4))); }
   ctx.restore(); } };
+
+// ---------- gráficos do indicador (cores = farol do calc.js, considerando ↑/↓ e Limite) ----------
+const FAROL_COR = { ok:'#1f9d55', parcial:'#f0a202', falha:'#a30000', sem:'#cfd4d8' };
+const FAROL_TXT = { ok:'Atingido', parcial:'Parcial', falha:'Não atingido', sem:'Sem dado' };
+// atingimento de um ponto (mês ou acumulado) agregando as linhas filtradas, com as mesmas regras do modelo
+function atgPonto(x, ref) { return x.real === null || x.meta === null || !ref ? null : C.atgIndicador(ref.sinal, ref.limite, x.meta, x.real); }
+function statusPonto(x, ref) { const a = atgPonto(x, ref); return a === null ? 'sem' : C.farol({ semDado:false, atgInd:a }); }
+// meses com dado esperado: anos passados = todos; ano corrente = até o mês anterior
+const mesEsperado = i => S.ano !== String(new Date().getFullYear()) || i < LIM;
+function desafioAlvo(x, ref) { const d = ref && C.num(ref.desafio); if (!d || x.meta === null) return null; return ref.sinal === '↓' ? x.meta * (1 - d) : x.meta * (1 + d); }
+const GRID = { color:'rgba(39,46,50,.07)', drawTicks:false }, AX = { grid:{ display:false }, ticks:{ padding:6 } };
+const legendaFarol = (extra) => ({ position:'bottom', labels:{ usePointStyle:true, boxWidth:10, padding:14, generateLabels: () => [
+  ...extra, ...['ok', 'parcial', 'falha', 'sem'].map(k => ({ text:FAROL_TXT[k], fillStyle:FAROL_COR[k], strokeStyle:FAROL_COR[k], pointStyle:'rectRounded', lineWidth:0 })) ] } });
+const semDadoPlugin = { id:'semdado', afterDatasetsDraw(ch) { const o = ch.options.plugins.semdado; if (!o) return; const ctx = ch.ctx, y = ch.scales.y.getPixelForValue(ch.scales.y.min);
+  ctx.save(); ctx.font = "italic 10px 'Poppins', Arial, sans-serif"; ctx.fillStyle = '#8a959e'; ctx.textAlign = 'center';
+  o.forEach((on, i) => { if (on) ctx.fillText('sem dado', ch.scales.x.getPixelForValue(i), y - 6); }); ctx.restore(); } };
+function indChart(id, M12, ref) {
+  const st = M12.map(x => statusPonto(x, ref)), des = M12.map(x => desafioAlvo(x, ref)), temDes = des.some(v => v !== null);
+  const ds = [
+    { type:'line', label:'Meta', data:M12.map(x => x.meta), borderColor:'#272e32', backgroundColor:'#272e32', pointRadius:3.5, pointHoverRadius:5, borderWidth:2.5, tension:0, order:0 },
+    { label:'Realizado', data:M12.map(x => x.real), backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46, order:2, fmt:v => fmtV(v, ref) } ];
+  if (temDes) ds.splice(1, 0, { type:'line', label:'Desafio', data:des, borderColor:'#5f6c77', borderDash:[6, 5], borderWidth:1.8, pointRadius:0, tension:0, order:1 });
+  const extra = [{ text:'Meta', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:3 }];
+  if (temDes) extra.push({ text:'Desafio', fillStyle:'#5f6c77', strokeStyle:'#5f6c77', pointStyle:'dash', lineWidth:2, lineDash:[6, 5] });
+  chart(id, { type:'bar', data:{ labels:MESES.slice(0, 12), datasets:ds },
+    options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
+      scales:{ x:AX, y:{ beginAtZero:true, grace:'12%', border:{ display:false }, grid:GRID, ticks:{ padding:8, callback:v => fmtV(v, ref) } } },
+      plugins:{ legend:legendaFarol(extra), semdado:M12.map((x, i) => x.real === null && x.meta !== null && mesEsperado(i)),
+        tooltip:{ padding:10, callbacks:{ label:c => { const x = M12[c.dataIndex]; if (c.dataset.label === 'Realizado') return ` Realizado: ${fmtV(c.raw, ref)} · ${FAROL_TXT[st[c.dataIndex]]} (${pct(atgPonto(x, ref), 0)})`;
+          return ` ${c.dataset.label}: ${fmtV(c.raw, ref)}`; } } } } },
+    plugins:[labelPlugin, semDadoPlugin] });
+}
+// Atingimento do INDICADOR selecionado (como no Power BI), mês a mês + Acumulado
+function indAtgChart(id, P13, ref) {
+  const at = P13.map(x => atgPonto(x, ref)), st = P13.map(x => statusPonto(x, ref));
+  chart(id, { type:'bar', data:{ labels:MESES, datasets:[
+    { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', borderDash:[5, 4], pointRadius:0, borderWidth:1.5 },
+    { label:'Atingimento', data:at, backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46 } ] },
+    options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
+      scales:{ x:AX, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
+      plugins:{ legend:legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:2, lineDash:[5, 4] }]),
+        semdado:P13.map((x, i) => x.real === null && x.meta !== null && (i === 12 || mesEsperado(i))),
+        tooltip:{ padding:10, callbacks:{ label:c => c.dataset.label === 'Atingimento' ? ` Atingimento: ${pct(c.raw, 1)} · ${FAROL_TXT[st[c.dataIndex]]}` : ' Meta: 100%' } } } },
+    plugins:[labelPlugin, semDadoPlugin] });
+}
 
 // ---------- páginas ----------
 function renderPainel() {
@@ -130,15 +177,12 @@ function renderPainel() {
   const ir = b.filter(r => r.indicador === S.selInd);
   const byM = m => { const x = ir.filter(r => r.mes === m); return { meta:x.length ? x.at(-1).meta : null, real:x.some(r => !r.semDado) ? x.reduce((a, r) => a + (r.realizado ?? 0), 0) : null, r:x[0] }; };
   const M12 = MESES.slice(0, 12).map(byM), ref = ir[0];
-  chart('chInd', { type:'bar', data:{ labels:MESES.slice(0, 12), datasets:[
-    { type:'line', label:'Meta', data:M12.map(x => x.meta), borderColor:'#272e32', backgroundColor:'#272e32', pointRadius:3, borderWidth:2 },
-    { label:'Realizado', data:M12.map(x => x.real), backgroundColor:'#a30000', fmt:v => fmtV(v, ref) } ] },
-    options:{ maintainAspectRatio:false, animation:false, plugins:{ legend:{ position:'bottom' } } }, plugins:[labelPlugin] });
+  indChart('chInd', M12, ref);
   const ac = byM('Acumulado'), mx = Math.max(ac.real || 0, ac.meta || 0) * 1.1 || 1;
-  chart('chGauge', { type:'doughnut', data:{ labels:['Realizado', ''], datasets:[{ data:[ac.real || 0, mx - (ac.real || 0)], backgroundColor:[ac.r && C.farol(ac.r) === 'ok' ? '#007024' : '#a30000', '#e6e6e6'], borderWidth:0 }] },
+  chart('chGauge', { type:'doughnut', data:{ labels:['Realizado', ''], datasets:[{ data:[ac.real || 0, mx - (ac.real || 0)], backgroundColor:[FAROL_COR[statusPonto(ac, ref)], '#eef0f1'], borderWidth:0 }] },
     options:{ maintainAspectRatio:false, animation:false, rotation:-90, circumference:180, cutout:'70%', plugins:{ legend:{ display:false }, tooltip:{ enabled:false } } } });
   $('#gaugeTxt').innerHTML = ac.real === null ? '<span style="color:#999">(Em branco)</span>' : `${fmtV(ac.real, ref)}<br><small style="font-size:12px;color:#666">Meta ${fmtV(ac.meta, ref)}</small>`;
-  atgChart('chAtg', b);
+  indAtgChart('chAtg', [...M12, ac], ref);
 }
 function renderAting() {
   const sec = $('#tab-ating'); renderSlicers(sec);

@@ -45,8 +45,8 @@ table.ind td.c{text-align:center}table.ind tr:nth-child(even) td{background:#faf
 .card b{display:block;font-size:24px;font-weight:700;color:var(--dark)}.card small,.card span{color:var(--grey);font-size:11px;text-transform:uppercase;letter-spacing:1px}
 .charts{display:flex;gap:12px}.chart{padding:10px 12px;margin-bottom:12px;position:relative}
 .chart h3{margin:0 0 6px;font-size:14px;font-weight:600;color:var(--dark);text-align:left;text-transform:uppercase;letter-spacing:1px;padding-left:10px;border-left:3px solid var(--red)}
-.chart.big{flex:3;height:290px}.chart.small{flex:1;height:290px}.chart.wide{height:270px}.chart.tall{height:auto}#colabWrap{position:relative}
-.chart canvas{max-height:calc(100% - 24px)}.gtxt{position:absolute;bottom:40px;left:0;right:0;text-align:center;font-size:22px;font-weight:700;font-family:var(--head);color:var(--dark)}
+.chart.big{flex:3;height:clamp(300px,34vh,400px)}.chart.small{flex:1;height:clamp(300px,34vh,400px)}.chart.wide{height:clamp(280px,32vh,380px)}.chart.tall{height:auto}#colabWrap{position:relative}
+.chart canvas{max-height:calc(100% - 28px)}.gtxt{position:absolute;bottom:40px;left:0;right:0;text-align:center;font-size:22px;font-weight:700;font-family:var(--head);color:var(--dark)}
 .ptitle{color:var(--red);margin:12px 0 6px;font-family:var(--head)}.printhead{font-weight:600;margin:4px 0}
 /* rodapé grafite como o do site */
 footer{background:var(--dark);color:#aeb6bc;font-size:12px;padding:22px 28px;margin-top:20px;border-top:4px solid var(--red);display:flex;align-items:center;gap:18px;flex-wrap:wrap}
