@@ -1,0 +1,60 @@
+/* Book de Metas – identidade visual do site smmetais.com.br (vermelho #a30000/#8c0808, grafite #272e32, cinza #5f6c77; fontes Jost + Poppins) */
+@import url(fonts/fonts.css);
+:root{--red:#a30000;--red2:#8c0808;--dark:#272e32;--grey:#5f6c77;--text:#3e3e3e;--lg:#e6e6e6;--bg:#f7f7f7;--green:#007024;--yellow:#f2b400;--orange:#e07b00;
+ --head:'Jost','Poppins',Arial,sans-serif;--body:'Poppins',Arial,sans-serif;--radius:6px;--shadow:0 2px 14px rgba(39,46,50,.08)}
+*{box-sizing:border-box}body{margin:0;font-family:var(--body);color:var(--text);background:var(--bg);font-size:13px;line-height:1.45}
+h1,h3,h4,.tabs button,.card b{font-family:var(--head)}
+/* cabeçalho grafite como o do site, com faixa vermelha */
+.top{display:flex;align-items:center;gap:20px;background:var(--dark);color:#fff;padding:12px 28px;border-bottom:4px solid var(--red);box-shadow:var(--shadow)}
+.logo{display:flex;align-items:center}.logo img{height:38px;width:auto;display:block}
+.top h1{flex:1;text-align:center;margin:0;font-size:26px;font-weight:600;letter-spacing:5px;text-transform:uppercase}
+.upd{text-align:right;font-size:11px;color:#c9ced2;letter-spacing:.5px;text-transform:uppercase}.upd b{color:#fff;font-size:13px;text-transform:none;letter-spacing:0}
+/* navegação: links em caixa alta, aba ativa com sublinhado vermelho */
+.tabs{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:6px;padding:0 28px;background:#fff;border-bottom:1px solid var(--lg);align-items:center;box-shadow:var(--shadow)}
+.tabs button[data-tab]{border:0;border-bottom:3px solid transparent;background:none;padding:14px 14px 11px;cursor:pointer;font-size:14px;font-weight:600;color:var(--grey);text-transform:uppercase;letter-spacing:1px}
+.tabs button[data-tab]:hover{color:var(--red)}.tabs button[data-tab].active{color:var(--red);border-bottom-color:var(--red)}
+.spacer{flex:1}
+/* botões no estilo do site: vermelho preenchido, arredondado, caixa alta */
+.filebtn,.demobtn,.msbtn,.printbtn,#btnLogout{font-family:var(--head);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;border-radius:var(--radius);padding:8px 16px;cursor:pointer;border:2px solid var(--red);background:var(--red);color:#fff;transition:background .15s,border-color .15s}
+.filebtn:hover,.msbtn:hover,.printbtn:hover{background:var(--red2);border-color:var(--red2)}
+.demobtn,#btnLogout{background:#fff!important;color:var(--dark);border-color:var(--dark)}.demobtn:hover,#btnLogout:hover{background:var(--dark)!important;color:#fff}
+.msbtn:disabled{opacity:.6;cursor:wait}
+.banner{background:#fff6dc;border-left:4px solid var(--yellow);padding:8px 28px;font-weight:500}.hidden{display:none!important}
+.banner.err{background:#fbeaea;color:var(--red2);border-left-color:var(--red)}.banner.info{background:#eef1f3;color:var(--dark);border-left-color:var(--grey)}
+.auth{display:inline-flex;gap:8px;align-items:center;margin-left:8px;padding:6px 0}.user{font-size:12px;color:var(--grey)}
+.drop{margin:40px auto;max-width:640px;border:2px dashed #c4c9cd;border-radius:10px;padding:44px;text-align:center;background:#fff;color:var(--grey);box-shadow:var(--shadow)}.drop b{color:var(--dark);font-family:var(--head);font-size:16px}
+.drop.over{border-color:var(--red);background:#fff5f5}
+main{padding:18px 28px;max-width:1600px;margin:0 auto}
+/* filtros */
+.slicers{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px}.sl h4{margin:0 0 5px;font-size:11px;font-weight:600;color:var(--red);letter-spacing:1.5px}.grow{flex:1}
+.btns{display:flex;flex-wrap:wrap;gap:4px}.btns button{font-family:var(--body);border:1px solid #cfd4d8;background:#fff;color:var(--text);padding:5px 11px;cursor:pointer;font-size:12px;min-width:44px;border-radius:20px;transition:all .12s}
+.btns button:hover{border-color:var(--red);color:var(--red)}.btns button.on{background:var(--red);color:#fff;border-color:var(--red)}
+select{font-family:var(--body);padding:6px 8px;font-size:12px;min-width:200px;border:1px solid #cfd4d8;border-radius:var(--radius);background:#fff;color:var(--text)}select:focus{outline:2px solid rgba(163,0,0,.25);border-color:var(--red)}select[multiple]{min-height:74px}
+/* tabelas e cartões */
+.tablewrap,.chart,.card{background:#fff;border:0;border-radius:var(--radius);box-shadow:var(--shadow)}
+.tablewrap{overflow:auto}
+table.ind{border-collapse:collapse;width:100%}table.ind th{background:var(--dark);color:#fff;padding:8px;font-family:var(--head);font-weight:600;white-space:nowrap;letter-spacing:.4px}
+table.ind th:first-child{border-top-left-radius:var(--radius)}table.ind th:last-child{border-top-right-radius:var(--radius)}
+table.ind td{padding:6px 8px;border-bottom:1px solid #eef0f1;text-align:right;white-space:nowrap}table.ind td.l{text-align:left;max-width:330px;overflow:hidden;text-overflow:ellipsis}
+table.ind td.c{text-align:center}table.ind tr:nth-child(even) td{background:#fafbfb}table.ind tr:hover td{background:#fbf1f1}table.ind tr.semdado td{color:#9aa3aa}
+/* farol: verde = atingiu, laranja = parcial, vermelho = não atingiu, cinza = sem dado */
+.f{display:inline-block;width:20px;height:20px;border-radius:50%;color:#fff;font-weight:700;line-height:20px;text-align:center;font-size:12px}
+.f.ok{background:var(--green)}.f.falha{background:#c62828}.f.parcial{background:var(--orange)}.f.sem{background:#b9c0c5}
+.neg{color:#c62828}
+.totals{display:flex;justify-content:flex-end;gap:12px;margin:12px 0}.card{border-top:4px solid var(--red);padding:8px 22px;text-align:center;min-width:120px}
+.card b{display:block;font-size:24px;font-weight:700;color:var(--dark)}.card small,.card span{color:var(--grey);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.charts{display:flex;gap:12px}.chart{padding:10px 12px;margin-bottom:12px;position:relative}
+.chart h3{margin:0 0 6px;font-size:14px;font-weight:600;color:var(--dark);text-align:left;text-transform:uppercase;letter-spacing:1px;padding-left:10px;border-left:3px solid var(--red)}
+.chart.big{flex:3;height:290px}.chart.small{flex:1;height:290px}.chart.wide{height:270px}.chart.tall{height:auto}#colabWrap{position:relative}
+.chart canvas{max-height:calc(100% - 24px)}.gtxt{position:absolute;bottom:40px;left:0;right:0;text-align:center;font-size:22px;font-weight:700;font-family:var(--head);color:var(--dark)}
+.ptitle{color:var(--red);margin:12px 0 6px;font-family:var(--head)}.printhead{font-weight:600;margin:4px 0}
+/* rodapé grafite como o do site */
+footer{background:var(--dark);color:#aeb6bc;font-size:12px;padding:22px 28px;margin-top:20px;border-top:4px solid var(--red);display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+footer img{height:26px;opacity:.85}footer span{flex:1;min-width:240px}
+@media (max-width:900px){.top{flex-wrap:wrap;padding:10px 16px;gap:8px}.top h1{order:3;flex-basis:100%;font-size:19px;letter-spacing:3px}.upd{margin-left:auto}
+ .tabs{padding:0 12px;position:static}.tabs button[data-tab]{padding:12px 8px 9px;font-size:12px}main{padding:12px}.charts{flex-direction:column}.chart.big,.chart.small{flex:none;height:260px}
+ select{min-width:0;width:100%}.sl{min-width:0;max-width:100%}.totals{justify-content:stretch}.card{flex:1}footer{padding:16px}}
+@media print{@page{size:A4 landscape;margin:10mm}body{background:#fff;font-size:10px}.no-print,.banner,.drop,footer{display:none!important}
+ .tablewrap,.chart,.card{box-shadow:none;border:1px solid #ddd}
+ .top{-webkit-print-color-adjust:exact;print-color-adjust:exact}table.ind th,.f{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .tab:not(#tab-print){display:none!important}#tab-print{display:block!important}.chart{break-inside:avoid}}
