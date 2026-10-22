@@ -138,6 +138,13 @@ footer span:first-of-type{flex:0 1 auto}@media (max-width:900px){.brdesk{display
  #tab-print .ptl{font-size:11pt;margin:0 0 1.5mm}#tab-print .ptl small{font-size:8pt}#tab-print .ptitle{font-size:8pt;margin:0 0 1mm}
  #tab-print table.ind{font-size:7pt}#tab-print table.ind th,#tab-print table.ind td{padding:1px 4px;line-height:1.25}#tab-print .f{width:12px;height:12px;line-height:12px;font-size:8px}
  #tab-print .tablewrap{overflow:visible;max-height:none}#tab-print .cons-chart{margin-top:0!important}
- #tab-print .cons-chart .chart{height:66mm!important;padding:0}#tab-print .cons-chart canvas{max-height:66mm!important}
+ #tab-print .cons-chart .chart{height:70mm!important;padding:0}#tab-print .cons-chart canvas{max-height:none!important}
  #tab-print{break-inside:avoid}}
 .panel.filters [data-sl=cargo] select,.panel.filters [data-sl=resp] select{width:200px;max-width:100%}@media (max-width:900px){.panel.filters [data-sl=cargo] select,.panel.filters [data-sl=resp] select{width:100%}}
+@media print{#tab-print table.ind{font-size:8.5pt}#tab-print table.ind th,#tab-print table.ind td{padding:2.6px 6px}#tab-print .ptl{font-size:12.5pt}#tab-print .ptitle{font-size:9pt}#tab-print .panel{margin-bottom:3.5mm!important}}
+/* exportação com fundo cinza de ponta a ponta, como na tela (cartões brancos sobre cinza) */
+@media print{@page{size:A4 landscape;margin:0}
+ html,body{background:#eef0f2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ html,body{height:209mm;overflow:hidden}body{padding:7mm 8mm;width:297mm;box-sizing:border-box;margin:0}.app,.content{min-height:0!important}
+ #tab-print .panel{background:#fff!important;border:1px solid #e3e6e9!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #tab-print table.ind th,#tab-print table.ind td{padding:2.2px 6px}#tab-print .panel{margin-bottom:3mm!important}#tab-print .panel:last-child{margin-bottom:0!important}}

@@ -42,8 +42,11 @@ document.addEventListener('drop', e => { e.preventDefault(); $('#drop').classLis
 $$('.tabs button[data-tab]').forEach(b => b.onclick = () => { $$('.tabs button[data-tab]').forEach(x => x.classList.toggle('active', x === b)); $$('.tab').forEach(t => t.classList.add('hidden')); $('#tab-' + b.dataset.tab).classList.remove('hidden'); render(); });
 $('#btnPrint').onclick = () => window.print();
 // exportar: redimensiona os gráficos para o layout de impressão (1 página A4 paisagem) e restaura depois
-window.addEventListener('beforeprint', () => Object.values(charts).forEach(c => c.resize()));
-window.addEventListener('afterprint', () => Object.values(charts).forEach(c => c.resize()));
+// A4 paisagem, margem 8mm → área útil ≈ 281mm de largura; o gráfico do Consolidado é redesenhado no tamanho de impressão (sem distorção)
+const MM = 96 / 25.4;
+window.addEventListener('beforeprint', () => { const c = charts.chMes3; if (!c || curTab() !== 'print') return;
+  const w = Math.round((281 - 10) * MM), h = Math.round(70 * MM); c.canvas.parentElement.style.width = w + 'px'; c.canvas.parentElement.style.height = h + 'px'; c.resize(w, h); });
+window.addEventListener('afterprint', () => { const c = charts.chMes3; if (!c) return; c.canvas.parentElement.style.width = ''; c.canvas.parentElement.style.height = ''; c.resize(); });
 
 // ---------- filtros ----------
 const curTab = () => $$('.tabs button.active')[0].dataset.tab;
@@ -117,7 +120,7 @@ function atgChart(id, rows) {
     { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', borderDash:[5, 4], pointRadius:0, borderWidth:1.5 },
     { label:'Atingimento Book', data:s.map(x => x && x.book), backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46 } ] },
     options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
-      scales:{ x:AX, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
+      scales:{ x:{ ...AX, ticks:{ padding:6, maxRotation:0, autoSkip:false } }, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
       plugins:{ legend:legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:2, lineDash:[5, 4] }]),
         semdado:s.map((x, i) => st[i] === 'sem' && (i === 12 || mesEsperado(i))),
         tooltip:{ padding:10, callbacks:{ label:c => c.dataset.label === 'Meta 100%' ? ' Meta: 100%' : ` ${c.dataset.label}: ${pct(c.raw, 1)} · ${FAROL_TXT[st[c.dataIndex]]}` } } } },
@@ -166,7 +169,7 @@ function indAtgChart(id, P13, ref) {
     { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', borderDash:[5, 4], pointRadius:0, borderWidth:1.5 },
     { label:'Atingimento', data:at, backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46 } ] },
     options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
-      scales:{ x:AX, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
+      scales:{ x:{ ...AX, ticks:{ padding:6, maxRotation:0, autoSkip:false } }, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
       plugins:{ legend:legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:2, lineDash:[5, 4] }]),
         semdado:P13.map((x, i) => x.real === null && x.meta !== null && (i === 12 || mesEsperado(i))),
         tooltip:{ padding:10, callbacks:{ label:c => c.dataset.label === 'Atingimento' ? ` Atingimento: ${pct(c.raw, 1)} · ${FAROL_TXT[st[c.dataIndex]]}` : ' Meta: 100%' } } } },
