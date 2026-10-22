@@ -140,3 +140,4 @@ footer span:first-of-type{flex:0 1 auto}@media (max-width:900px){.brdesk{display
  #tab-print .tablewrap{overflow:visible;max-height:none}#tab-print .cons-chart{margin-top:0!important}
  #tab-print .cons-chart .chart{height:66mm!important;padding:0}#tab-print .cons-chart canvas{max-height:66mm!important}
  #tab-print{break-inside:avoid}}
+.panel.filters [data-sl=cargo] select,.panel.filters [data-sl=resp] select{width:200px;max-width:100%}@media (max-width:900px){.panel.filters [data-sl=cargo] select,.panel.filters [data-sl=resp] select{width:100%}}

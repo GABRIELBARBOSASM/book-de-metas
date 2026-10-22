@@ -69,7 +69,7 @@ function renderSlicers(sec) {
     if (k === 'ano') btnSlicer(el, anos, a => a === S.ano, a => S.ano = a);
     if (k === 'mes') btnSlicer(el, MESES, m => m === S.mes, m => S.mes = m);
     if (k === 'empresa') btnSlicer(el, uniq([...EMPRESAS, ...ROWS.map(r => r.empresa)]), e => e === S.empresa, e => { S.empresa = (S.empresa === e && curTab() === 'ating') ? null : e; S.cargos = new Set(); S.resp = 'Todos'; });
-    if (k === 'cargo') selSlicer(el, uniq(scope.filter(fNivel).map(r => r.cargo)), S.cargos, v => { S.cargos = v; S.resp = 'Todos'; }, true);
+    if (k === 'cargo') selSlicer(el, uniq(scope.filter(fNivel).map(r => r.cargo)), S.cargos.size === 1 ? [...S.cargos][0] : 'Todos', v => { S.cargos = v === 'Todos' ? new Set() : new Set([v]); S.resp = 'Todos'; });
     if (k === 'resp') selSlicer(el, uniq(scope.filter(fCargo).map(r => r.responsavel)), S.resp, v => S.resp = v);
     if (k === 'nivel') selSlicer(el, Object.keys(C.NIVEL_ORD), S.nivel, v => S.nivel = v);
     if (k === 'indicador') selSlicer(el, uniq(scope.filter(fCargo).map(r => r.indicador)), S.indicador, v => S.indicador = v);
