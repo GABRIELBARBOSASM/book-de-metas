@@ -125,3 +125,17 @@ footer{margin-top:auto}
 #tab-print table.ind td.l{white-space:normal;max-width:none;min-width:200px}
 #tab-print .ptitle{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px}
 @media print{#tab-print .cons-chart{margin-top:10px}#tab-print .panel{border:1px solid #ddd}}
+/* barra lateral clara: só o bloco do logo fica grafite (com linha vermelha); abaixo, a cor de fundo da página */
+.app{background:none}
+.side{background:#eef0f2;color:var(--dark);border-right:1px solid #dde1e4;min-height:100vh;height:auto;align-self:flex-start;position:sticky;top:0;max-height:100vh}
+.brand{background:#272e32;border-bottom:4px solid var(--red);padding:16px 18px 13px}
+.side .tabs button[data-tab]{color:var(--grey)}
+.side .tabs button[data-tab]:hover{color:var(--red);background:rgba(163,0,0,.05)}
+.side .tabs button[data-tab].active{color:var(--red);background:#fff;border-left-color:var(--red);box-shadow:0 1px 6px rgba(39,46,50,.06)}
+.side .tabs button[data-tab].active svg{stroke:var(--red)}
+.side-actions{border-top:1px solid #dde1e4}
+.side-actions .demobtn{color:var(--dark);border-color:var(--dark)}.side-actions .demobtn:hover{background:var(--dark)!important;color:#fff}
+.side-foot{color:#8a959e}
+.top{height:auto}
+@media (max-width:900px){.side{min-height:0;max-height:none;position:static;border-right:0;border-bottom:1px solid #dde1e4;background:#eef0f2}
+ .brand{border-bottom:0;border-radius:0 0 10px 0}.side .tabs button[data-tab].active{border-bottom-color:var(--red);box-shadow:none;background:none}}
