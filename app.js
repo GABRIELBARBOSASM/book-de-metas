@@ -45,7 +45,7 @@ $('#btnPrint').onclick = () => window.print();
 // A4 paisagem, margem 8mm → área útil ≈ 281mm de largura; o gráfico do Consolidado é redesenhado no tamanho de impressão (sem distorção)
 const MM = 96 / 25.4;
 window.addEventListener('beforeprint', () => { const c = charts.chMes3; if (!c || curTab() !== 'print') return;
-  const w = Math.round((281 - 10) * MM), h = Math.round(70 * MM); c.canvas.parentElement.style.width = w + 'px'; c.canvas.parentElement.style.height = h + 'px'; c.resize(w, h); });
+  const w = Math.round((281 - 10) * MM), h = Math.round(62 * MM); c.canvas.parentElement.style.width = w + 'px'; c.canvas.parentElement.style.height = h + 'px'; c.resize(w, h); });
 window.addEventListener('afterprint', () => { const c = charts.chMes3; if (!c) return; c.canvas.parentElement.style.width = ''; c.canvas.parentElement.style.height = ''; c.resize(); });
 
 // ---------- filtros ----------
@@ -219,6 +219,11 @@ function gauge(el, ac, ref) {
     <text x="100" y="102" text-anchor="middle" class="gst">${FAROL_TXT[st]}</text></svg>
     <div class="glbl"><div><small>Realizado</small><b>${sem ? '—' : fmtV(ac.real, ref)}</b></div><div><small>Meta</small><b>${ac.meta === null ? '—' : fmtV(ac.meta, ref)}</b></div></div>`;
 }
+// KPIs Atingimento Book / Desafio / Δ (mesma regra do Painel) para um conjunto de linhas
+function kpiBook(p, rows) { const g = new Set(rows.map(r => r.c5 + r.responsavel)).size || 1;
+  const tb = rows.reduce((s, r) => s + r.atgBook3, 0) / g, td = rows.reduce((s, r) => s + r.atgBook4, 0) / g;
+  $('#' + p + 'Book').textContent = pct(tb, 1); $('#' + p + 'Desf').textContent = pct(td, 1);
+  kpiDelta($('#' + p + 'Delta'), rows.length ? td - tb : null, v => (v > 0 ? '+' : '') + nf(1).format(v * 100) + ' p.p.', null); }
 // Δ com seta: cor pelo farol (ou sinal, quando não há farol)
 function kpiDelta(el, v, fmt, st, menorMelhor) {
   if (v === null || v === undefined || isNaN(v)) { el.textContent = '—'; el.style.color = '#8a959e'; return; }
@@ -242,6 +247,7 @@ function renderPrint() {
   $('#printHead').textContent = `· Ano ${S.ano} · ${S.empresa || 'Todas'} · ${S.cargos.size ? [...S.cargos].join(', ') : 'Todos os cargos'}`;
   $('#pt1').textContent = 'Mês: ' + S.mes;
   table($('#tblP1'), b.filter(r => r.mes === S.mes)); table($('#tblP2'), b.filter(r => r.mes === 'Acumulado'));
+  kpiBook('kP1', b.filter(r => r.mes === S.mes)); kpiBook('kP2', b.filter(r => r.mes === 'Acumulado'));
   atgChart('chMes3', b);
 }
 function render() { if (!ROWS.length) return; ({ painel:renderPainel, ating:renderAting, print:renderPrint })[curTab()](); }
