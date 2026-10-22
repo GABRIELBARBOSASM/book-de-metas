@@ -7,45 +7,60 @@
 <script src="lib/xlsx.full.min.js"></script><script src="lib/chart.umd.min.js"></script>
 <script src="calc.js"></script><script src="demo-data.js"></script>
 </head><body>
+<div class="app">
+<aside class="side no-print">
+  <div class="brand"><img src="img/logo-smmetais.png" alt="SM Metais – Mineração e Siderurgia" width="149" height="43"></div>
+  <nav class="tabs" aria-label="Páginas">
+    <button data-tab="painel" class="active"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Painel</span></button>
+    <button data-tab="ating"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg><span>Atingimento</span></button>
+    <button data-tab="print"><svg viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></svg><span>Print</span></button>
+  </nav>
+  <div class="side-actions">
+    <label class="filebtn">📂 Abrir BD BOOK.7.xlsm<input type="file" id="file" accept=".xlsm,.xlsx,.xls" hidden></label>
+    <button id="demo" class="demobtn">Carregar demo</button>
+  </div>
+  <div class="side-foot">smmetais.com.br</div>
+</aside>
+<div class="content">
 <header class="top">
-  <div class="logo"><img src="img/logo-smmetais.png" alt="SM Metais – Mineração e Siderurgia" width="149" height="43"></div>
-  <h1>BOOK DE METAS</h1>
+  <div class="logo"><img src="img/logo-smmetais.png" alt="SM Metais" width="149" height="43"></div>
+  <h1>Book de Metas <small>· Histórico</small></h1>
   <div class="upd">Atualizado em:<br><b id="atualizado">—</b></div>
 </header>
-<nav class="tabs no-print">
-  <button data-tab="painel" class="active">Painel</button><button data-tab="ating">Atingimento</button><button data-tab="print">Print</button>
-  <span class="spacer"></span>
-  <label class="filebtn">📂 Abrir BD BOOK.7.xlsm<input type="file" id="file" accept=".xlsm,.xlsx,.xls" hidden></label>
-  <button id="demo" class="demobtn">Carregar demo</button>
-</nav>
 <div id="demoBanner" class="banner hidden">⚠ DADOS DEMO (fictícios) — carregue o arquivo real BD BOOK.7.xlsm para ver os números reais.</div>
-<div id="drop" class="drop"><div><b>Arraste aqui o arquivo “BD BOOK.7.xlsm”</b><br>(planilhas “Meta” e “Realizado”) ou use os botões acima.<br><small>Os dados são lidos só no navegador; nada é enviado.</small></div></div>
+<div id="drop" class="drop"><div><b>Arraste aqui o arquivo “BD BOOK.7.xlsm”</b><br>(planilhas “Meta” e “Realizado”) ou use os botões ao lado.<br><small>Os dados são lidos só no navegador; nada é enviado.</small></div></div>
 <main id="main" class="hidden">
  <section id="tab-painel" class="tab">
-  <div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl grow"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
-  <div class="slicers"><div class="sl"><h4>EMPRESA</h4><div class="btns" data-sl="empresa"></div></div><div class="sl"><h4>CARGO</h4><div data-sl="cargo"></div></div><div class="sl"><h4>RESPONSÁVEL</h4><div data-sl="resp"></div></div></div>
-  <div class="tablewrap"><table class="ind" id="tblPainel"></table></div>
-  <div class="totals"><div class="card"><small>TOTAL</small><b id="totBook">—</b><span>Book</span></div><div class="card"><small>TOTAL</small><b id="totDesf">—</b><span>Desafio</span></div></div>
-  <div class="slicers"><div class="sl grow"><h4>INDICADOR</h4><select id="selInd"></select></div></div>
-  <div class="charts"><div class="chart big"><h3>Indicador · Realizado x Meta</h3><canvas id="chInd"></canvas></div><div class="chart small"><h3>Acumulado</h3><canvas id="chGauge"></canvas><div id="gaugeTxt" class="gtxt"></div></div></div>
-  <div class="chart wide"><h3>Atingimento do indicador</h3><canvas id="chAtg"></canvas></div>
+  <div class="panel filters"><div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl grow"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
+  <div class="slicers"><div class="sl"><h4>EMPRESA</h4><div class="btns" data-sl="empresa"></div></div><div class="sl"><h4>CARGO</h4><div data-sl="cargo"></div></div><div class="sl"><h4>RESPONSÁVEL</h4><div data-sl="resp"></div></div><div class="sl grow"><h4>INDICADOR</h4><select id="selInd"></select></div></div></div>
+  <div class="grid2">
+   <div class="panel"><h3 class="ptl">Book do mês</h3>
+    <div class="kpis"><div class="kpi"><small>Atingimento Book</small><b id="totBook">—</b></div><div class="kpi"><small>Atingimento Desafio</small><b id="totDesf">—</b></div><div class="kpi"><small>Δ Desafio x Book</small><b id="kDeltaBook" class="delta">—</b></div></div>
+    <div class="tablewrap inner"><table class="ind" id="tblPainel"></table></div></div>
+   <div class="panel"><h3 class="ptl">Indicador · Realizado x Meta</h3>
+    <div class="kpis"><div class="kpi"><small>Realizado (acum.)</small><b id="kReal">—</b></div><div class="kpi"><small>Meta (acum.)</small><b id="kMeta">—</b></div><div class="kpi"><small>Δ Real x Meta</small><b id="kDelta" class="delta">—</b></div></div>
+    <div class="charts"><div class="chart big"><canvas id="chInd"></canvas></div><div class="chart small"><h3>Acumulado</h3><canvas id="chGauge"></canvas><div id="gaugeTxt" class="gtxt"></div></div></div></div>
+  </div>
+  <div class="panel"><div class="phead"><h3 class="ptl">Atingimento do indicador <small id="atgSub"></small></h3><div class="toggle" id="atgToggle"><button data-v="ind" class="on">Indicador</button><button data-v="book">Book</button></div></div>
+   <div class="chart wide"><canvas id="chAtg"></canvas></div></div>
  </section>
  <section id="tab-ating" class="tab hidden">
-  <div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl grow"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
-  <div class="slicers"><div class="sl"><h4>EMPRESA</h4><div class="btns" data-sl="empresa"></div></div><div class="sl"><h4>NÍVEL</h4><div data-sl="nivel"></div></div><div class="sl"><h4>CARGO</h4><div data-sl="cargo"></div></div><div class="sl"><h4>INDICADOR</h4><div data-sl="indicador"></div></div></div>
-  <div class="chart wide tall"><h3>Atingimento - Colaborador</h3><div id="colabWrap"><canvas id="chColab"></canvas></div></div>
-  <div class="chart wide"><h3>Atingimento mensal</h3><canvas id="chMes2"></canvas></div>
+  <div class="panel filters"><div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl grow"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
+  <div class="slicers"><div class="sl"><h4>EMPRESA</h4><div class="btns" data-sl="empresa"></div></div><div class="sl"><h4>NÍVEL</h4><div data-sl="nivel"></div></div><div class="sl"><h4>CARGO</h4><div data-sl="cargo"></div></div><div class="sl"><h4>INDICADOR</h4><div data-sl="indicador"></div></div></div></div>
+  <div class="chart wide tall panelc"><h3>Atingimento - Colaborador</h3><div id="colabWrap"><canvas id="chColab"></canvas></div></div>
+  <div class="chart wide panelc"><h3>Atingimento mensal</h3><canvas id="chMes2"></canvas></div>
  </section>
  <section id="tab-print" class="tab hidden">
-  <div class="slicers no-print"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
-  <div class="slicers no-print"><div class="sl"><h4>EMPRESA</h4><div class="btns" data-sl="empresa"></div></div><div class="sl"><h4>CARGO</h4><div data-sl="cargo"></div></div><div class="sl"><h4>RESPONSÁVEL</h4><div data-sl="resp"></div></div>
-   <div class="sl"><h4>&nbsp;</h4><button id="btnPrint" class="printbtn">🖨 Imprimir</button></div></div>
+  <div class="panel filters no-print"><div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
+  <div class="slicers"><div class="sl"><h4>EMPRESA</h4><div class="btns" data-sl="empresa"></div></div><div class="sl"><h4>CARGO</h4><div data-sl="cargo"></div></div><div class="sl"><h4>RESPONSÁVEL</h4><div data-sl="resp"></div></div>
+   <div class="sl"><h4>&nbsp;</h4><button id="btnPrint" class="printbtn">🖨 Imprimir</button></div></div></div>
   <div class="printhead" id="printHead"></div>
   <h3 class="ptitle" id="pt1"></h3><div class="tablewrap"><table class="ind" id="tblP1"></table></div>
   <h3 class="ptitle">Acumulado</h3><div class="tablewrap"><table class="ind" id="tblP2"></table></div>
-  <div class="chart wide"><h3>Atingimento mensal</h3><canvas id="chMes3"></canvas></div>
+  <div class="chart wide panelc"><h3>Atingimento mensal</h3><canvas id="chMes3"></canvas></div>
  </section>
 </main>
 <footer class="no-print"><img src="img/logo-smmetais.png" alt="SM Metais" width="90" height="26"><span>Réplica web do relatório Power BI “Book de Metas – Histórico”. Regra: Realizado em branco = “sem dado” (0%, não atingido).</span><span>© Grupo SM Metais</span></footer>
+</div></div>
 <script src="app.js"></script>
 </body></html>

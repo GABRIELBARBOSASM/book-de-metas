@@ -1,6 +1,6 @@
 /* Book de Metas – app */
 const C = BookCalc, MESES = C.MESES, EMPRESAS = ['CSC','Ferguminas','MIB','MIG','MML','SM Metais','SM Mineração'];
-let ROWS = [], S = { ano:null, mes:null, empresa:'CSC', cargos:new Set(), resp:'Todos', nivel:'Todos', indicador:'Todos', selInd:null };
+let ROWS = [], S = { ano:null, mes:null, empresa:'CSC', cargos:new Set(), resp:'Todos', nivel:'Todos', indicador:'Todos', selInd:null, atgView:'ind' };
 const charts = {};
 if (window.Chart) { Chart.defaults.font.family = "'Poppins', Arial, sans-serif"; Chart.defaults.color = '#5f6c77'; Chart.defaults.borderColor = '#eef0f1'; }
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -182,7 +182,22 @@ function renderPainel() {
   chart('chGauge', { type:'doughnut', data:{ labels:['Realizado', ''], datasets:[{ data:[ac.real || 0, mx - (ac.real || 0)], backgroundColor:[FAROL_COR[statusPonto(ac, ref)], '#eef0f1'], borderWidth:0 }] },
     options:{ maintainAspectRatio:false, animation:false, rotation:-90, circumference:180, cutout:'70%', plugins:{ legend:{ display:false }, tooltip:{ enabled:false } } } });
   $('#gaugeTxt').innerHTML = ac.real === null ? '<span style="color:#999">(Em branco)</span>' : `${fmtV(ac.real, ref)}<br><small style="font-size:12px;color:#666">Meta ${fmtV(ac.meta, ref)}</small>`;
-  indAtgChart('chAtg', [...M12, ac], ref);
+  // cabeçalho de KPIs (estilo ACT / PLAN / Δ)
+  const tb = cur.reduce((s, r) => s + r.atgBook3, 0) / g, td = cur.reduce((s, r) => s + r.atgBook4, 0) / g;
+  kpiDelta($('#kDeltaBook'), cur.length ? td - tb : null, v => (v > 0 ? '+' : '') + nf(1).format(v * 100) + ' p.p.', null);
+  $('#kReal').textContent = ac.real === null ? 'sem dado' : fmtV(ac.real, ref); $('#kMeta').textContent = ac.meta === null ? '—' : fmtV(ac.meta, ref);
+  const dlt = ac.real === null || ac.meta === null ? null : ac.real - ac.meta, aP = atgPonto(ac, ref);
+  kpiDelta($('#kDelta'), dlt, v => `${v > 0 ? '+' : ''}${fmtV(v, ref)} | ${pct(aP, 1)}`, statusPonto(ac, ref), ref && ref.sinal === '↓');
+  $$('#atgToggle button').forEach(bt => { bt.classList.toggle('on', bt.dataset.v === S.atgView); bt.onclick = () => { S.atgView = bt.dataset.v; render(); }; });
+  $('#atgSub').textContent = S.atgView === 'book' ? '· Book (todos os indicadores)' : (S.selInd ? '· ' + S.selInd : '');
+  if (S.atgView === 'book') atgChart('chAtg', b); else indAtgChart('chAtg', [...M12, ac], ref);
+}
+// Δ com seta: cor pelo farol (ou sinal, quando não há farol)
+function kpiDelta(el, v, fmt, st, menorMelhor) {
+  if (v === null || v === undefined || isNaN(v)) { el.textContent = '—'; el.style.color = '#8a959e'; return; }
+  const up = v >= 0, arrow = Math.abs(v) < 1e-12 ? '' : (up ? ' ▲' : ' ▼');
+  el.textContent = fmt(v) + arrow;
+  el.style.color = st ? FAROL_COR[st] === '#cfd4d8' ? '#8a959e' : FAROL_COR[st] : ((up !== !!menorMelhor) ? FAROL_COR.ok : FAROL_COR.falha);
 }
 function renderAting() {
   const sec = $('#tab-ating'); renderSlicers(sec);
