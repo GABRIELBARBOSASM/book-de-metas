@@ -131,3 +131,12 @@ footer span:first-of-type{flex:0 1 auto}@media (max-width:900px){.brdesk{display
 /* coluna do menu: o fundo grafite termina exatamente na linha vermelha (antes vazava 4px de cinza escuro à direita dela) */
 .app{background:linear-gradient(90deg,#1d2326 calc(var(--side) - 4px),var(--red) calc(var(--side) - 4px),var(--red) var(--side),transparent var(--side))}
 @media (max-width:900px){.app{background:none}}
+/* Exportar (Consolidado): cabe em UMA página A4 paisagem */
+@media print{@page{size:A4 landscape;margin:8mm}
+ html,body{background:#fff!important}.app{display:block;background:none!important}.side,.top,.banner,footer,.no-print,.filters{display:none!important}
+ main{padding:0!important;max-width:none}#tab-print .panel{margin:0 0 3mm!important;padding:2mm 3mm!important;border:1px solid #ddd;border-radius:6px;break-inside:avoid}
+ #tab-print .ptl{font-size:11pt;margin:0 0 1.5mm}#tab-print .ptl small{font-size:8pt}#tab-print .ptitle{font-size:8pt;margin:0 0 1mm}
+ #tab-print table.ind{font-size:7pt}#tab-print table.ind th,#tab-print table.ind td{padding:1px 4px;line-height:1.25}#tab-print .f{width:12px;height:12px;line-height:12px;font-size:8px}
+ #tab-print .tablewrap{overflow:visible;max-height:none}#tab-print .cons-chart{margin-top:0!important}
+ #tab-print .cons-chart .chart{height:66mm!important;padding:0}#tab-print .cons-chart canvas{max-height:66mm!important}
+ #tab-print{break-inside:avoid}}

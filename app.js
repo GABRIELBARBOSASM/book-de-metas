@@ -41,6 +41,9 @@ document.addEventListener('dragleave', () => $('#drop').classList.remove('over')
 document.addEventListener('drop', e => { e.preventDefault(); $('#drop').classList.remove('over'); const f = e.dataTransfer.files[0]; if (f) readFile(f); });
 $$('.tabs button[data-tab]').forEach(b => b.onclick = () => { $$('.tabs button[data-tab]').forEach(x => x.classList.toggle('active', x === b)); $$('.tab').forEach(t => t.classList.add('hidden')); $('#tab-' + b.dataset.tab).classList.remove('hidden'); render(); });
 $('#btnPrint').onclick = () => window.print();
+// exportar: redimensiona os gráficos para o layout de impressão (1 página A4 paisagem) e restaura depois
+window.addEventListener('beforeprint', () => Object.values(charts).forEach(c => c.resize()));
+window.addEventListener('afterprint', () => Object.values(charts).forEach(c => c.resize()));
 
 // ---------- filtros ----------
 const curTab = () => $$('.tabs button.active')[0].dataset.tab;
