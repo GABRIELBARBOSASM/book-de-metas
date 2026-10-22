@@ -140,3 +140,5 @@ footer{margin-top:auto}
 @media (max-width:900px){.side{min-height:0;max-height:none;position:static;border-right:0;border-bottom:1px solid #dde1e4;background:#eef0f2}
  .brand{border-bottom:0;border-radius:0 0 10px 0}.side .tabs button[data-tab].active{border-bottom-color:var(--red);box-shadow:none;background:none}}
 footer span:first-of-type{flex:1 1 auto;max-width:none}footer span:last-of-type{flex:none;min-width:0;margin-left:auto}
+footer{flex-wrap:nowrap}footer span:first-of-type{min-width:0}footer span:last-of-type{white-space:nowrap;text-align:right}@media (max-width:900px){footer{flex-wrap:wrap}footer span:last-of-type{margin-left:0;text-align:left}}
+footer span:first-of-type{flex:0 1 auto}@media (max-width:900px){.brdesk{display:none}}
