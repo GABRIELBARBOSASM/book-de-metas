@@ -179,9 +179,7 @@ function renderPainel() {
   const M12 = MESES.slice(0, 12).map(byM), ref = ir[0];
   indChart('chInd', M12, ref);
   const ac = byM('Acumulado'), mx = Math.max(ac.real || 0, ac.meta || 0) * 1.1 || 1;
-  chart('chGauge', { type:'doughnut', data:{ labels:['Realizado', ''], datasets:[{ data:[ac.real || 0, mx - (ac.real || 0)], backgroundColor:[FAROL_COR[statusPonto(ac, ref)], '#eef0f1'], borderWidth:0 }] },
-    options:{ maintainAspectRatio:false, animation:false, rotation:-90, circumference:180, cutout:'70%', plugins:{ legend:{ display:false }, tooltip:{ enabled:false } } } });
-  $('#gaugeTxt').innerHTML = ac.real === null ? '<span style="color:#999">(Em branco)</span>' : `${fmtV(ac.real, ref)}<br><small style="font-size:12px;color:#666">Meta ${fmtV(ac.meta, ref)}</small>`;
+  gauge($('#gauge'), ac, ref);
   // cabeçalho de KPIs (estilo ACT / PLAN / Δ)
   const tb = cur.reduce((s, r) => s + r.atgBook3, 0) / g, td = cur.reduce((s, r) => s + r.atgBook4, 0) / g;
   kpiDelta($('#kDeltaBook'), cur.length ? td - tb : null, v => (v > 0 ? '+' : '') + nf(1).format(v * 100) + ' p.p.', null);
@@ -191,6 +189,23 @@ function renderPainel() {
   $$('#atgToggle button').forEach(bt => { bt.classList.toggle('on', bt.dataset.v === S.atgView); bt.onclick = () => { S.atgView = bt.dataset.v; render(); }; });
   $('#atgSub').textContent = S.atgView === 'book' ? '· Book (todos os indicadores)' : (S.selInd ? '· ' + S.selInd : '');
   if (S.atgView === 'book') atgChart('chAtg', b); else indAtgChart('chAtg', [...M12, ac], ref);
+}
+// velocímetro (SVG semicircular): preenchimento na cor do farol, marcador da meta
+function gauge(el, ac, ref) {
+  const st = statusPonto(ac, ref), cor = st === 'sem' ? '#cfd4d8' : FAROL_COR[st], at = atgPonto(ac, ref);
+  const mx = Math.max(Math.abs(ac.real || 0), Math.abs(ac.meta || 0)) * 1.2 || 1;
+  const f = ac.real === null ? 0 : Math.max(0, Math.min(1, ac.real / mx)), fm = ac.meta === null ? null : Math.max(0, Math.min(1, ac.meta / mx));
+  const P = t => [100 - 80 * Math.cos(Math.PI * t), 100 - 80 * Math.sin(Math.PI * t)], arc = 'M20 100 A80 80 0 0 1 180 100';
+  let mk = ''; if (fm !== null) { const [x1, y1] = [100 - 64 * Math.cos(Math.PI * fm), 100 - 64 * Math.sin(Math.PI * fm)], [x2, y2] = [100 - 96 * Math.cos(Math.PI * fm), 100 - 96 * Math.sin(Math.PI * fm)];
+    const [tx, ty] = [100 - 106 * Math.cos(Math.PI * fm), 100 - 106 * Math.sin(Math.PI * fm)];
+    mk = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#272e32" stroke-width="3" stroke-linecap="round"/><text x="${tx}" y="${ty}" class="gmk" text-anchor="middle" dominant-baseline="middle">Meta</text>`; }
+  const sem = ac.real === null;
+  el.innerHTML = `<svg viewBox="-12 -14 224 124" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Acumulado">
+    <path d="${arc}" fill="none" stroke="#eef0f1" stroke-width="18" stroke-linecap="round"/>
+    ${f > 0 ? `<path d="${arc}" fill="none" stroke="${cor}" stroke-width="18" stroke-linecap="round" pathLength="100" stroke-dasharray="${(f * 100).toFixed(2)} 200"/>` : ''}
+    ${mk}<text x="100" y="86" text-anchor="middle" class="gval" fill="${sem ? '#8a959e' : cor}">${sem ? 'sem dado' : pct(at, 1)}</text>
+    <text x="100" y="102" text-anchor="middle" class="gst">${FAROL_TXT[st]}</text></svg>
+    <div class="glbl"><div><small>Realizado</small><b>${sem ? '—' : fmtV(ac.real, ref)}</b></div><div><small>Meta</small><b>${ac.meta === null ? '—' : fmtV(ac.meta, ref)}</b></div></div>`;
 }
 // Δ com seta: cor pelo farol (ou sinal, quando não há farol)
 function kpiDelta(el, v, fmt, st, menorMelhor) {
