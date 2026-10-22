@@ -12,8 +12,8 @@
   <div class="brand"><img src="img/logo-smmetais.png" alt="SM Metais – Mineração e Siderurgia" width="149" height="43"></div>
   <nav class="tabs" aria-label="Páginas">
     <button data-tab="painel" class="active"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Painel</span></button>
-    <button data-tab="ating"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg><span>Atingimento</span></button>
-    <button data-tab="print"><svg viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></svg><span>Print</span></button>
+    <button data-tab="ating" class="hidden" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg><span>Atingimento</span></button>
+    <button data-tab="print"><svg viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></svg><span>Consolidado</span></button>
   </nav>
   <div class="side-actions">
     <label class="filebtn">📂 Abrir BD BOOK.7.xlsm<input type="file" id="file" accept=".xlsm,.xlsx,.xls" hidden></label>
@@ -54,10 +54,10 @@
   <div class="panel filters no-print"><div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
   <div class="slicers"><div class="sl"><h4>EMPRESA</h4><div class="btns" data-sl="empresa"></div></div><div class="sl"><h4>CARGO</h4><div data-sl="cargo"></div></div><div class="sl"><h4>RESPONSÁVEL</h4><div data-sl="resp"></div></div>
    <div class="sl"><h4>&nbsp;</h4><button id="btnPrint" class="printbtn">🖨 Imprimir</button></div></div></div>
-  <div class="printhead" id="printHead"></div>
-  <h3 class="ptitle" id="pt1"></h3><div class="tablewrap"><table class="ind" id="tblP1"></table></div>
-  <h3 class="ptitle">Acumulado</h3><div class="tablewrap"><table class="ind" id="tblP2"></table></div>
-  <div class="chart wide panelc"><h3>Atingimento mensal</h3><canvas id="chMes3"></canvas></div>
+  <div class="panel"><h3 class="ptl">Consolidado <small id="printHead"></small></h3>
+   <h3 class="ptitle" id="pt1"></h3><div class="tablewrap inner"><table class="ind" id="tblP1"></table></div></div>
+  <div class="panel"><h3 class="ptl">Acumulado</h3><div class="tablewrap inner"><table class="ind" id="tblP2"></table></div></div>
+  <div class="panel cons-chart"><h3 class="ptl">Atingimento mensal · Book</h3><div class="chart wide"><canvas id="chMes3"></canvas></div></div>
  </section>
 </main>
 <footer class="no-print"><img src="img/logo-smmetais.png" alt="SM Metais" width="90" height="26"><span>Réplica web do relatório Power BI “Book de Metas – Histórico”. Regra: Realizado em branco = “sem dado” (0%, não atingido).</span><span>© Grupo SM Metais</span></footer>

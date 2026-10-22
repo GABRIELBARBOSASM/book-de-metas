@@ -103,16 +103,22 @@ function bookSeries(rows) {
   return out;
 }
 const corAtg = v => v >= 1 ? '#007024' : v >= 0.7 ? '#f2b400' : '#a30000';
-function chart(id, cfg) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
+function chart(id, cfg) { if (charts[id]) charts[id].destroy();
+  if (cfg.type !== 'doughnut') { const sc = cfg.options.scales = cfg.options.scales || {}; sc.x = { ...(sc.x || {}), grid:{ display:false } };
+    sc.y = { ...(sc.y || {}), border:{ display:false }, grid:{ color:'rgba(39,46,50,.07)', drawTicks:false } }; } charts[id] = new Chart(document.getElementById(id), cfg); }
 const pctTick = { callback: v => nf(0).format(v * 100) + '%' };
 function atgChart(id, rows) {
-  const s = bookSeries(rows);
+  // mesmo modelo do Painel: barras na cor do farol, linha Meta 100% grafite tracejada, rótulos, "sem dado"
+  const s = bookSeries(rows), st = s.map(x => !x || x.book === null || x.book === undefined ? 'sem' : x.farol >= 1 ? 'ok' : x.farol >= 0.7 ? 'parcial' : 'falha');
   chart(id, { type:'bar', data:{ labels:MESES, datasets:[
     { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', borderDash:[5, 4], pointRadius:0, borderWidth:1.5 },
-    { label:'Atingimento Book', data:s.map(x => x && x.book), backgroundColor:s.map(x => x ? corAtg(x.farol) : '#cfd4d8') } ] },
-    options:{ maintainAspectRatio:false, animation:false, scales:{ y:{ min:0, suggestedMax:1.1, ticks:pctTick } },
-      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c => c.dataset.label + ': ' + pct(c.raw, 1) } } } },
-    plugins:[labelPlugin] });
+    { label:'Atingimento Book', data:s.map(x => x && x.book), backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46 } ] },
+    options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
+      scales:{ x:AX, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
+      plugins:{ legend:legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:2, lineDash:[5, 4] }]),
+        semdado:s.map((x, i) => st[i] === 'sem' && (i === 12 || mesEsperado(i))),
+        tooltip:{ padding:10, callbacks:{ label:c => c.dataset.label === 'Meta 100%' ? ' Meta: 100%' : ` ${c.dataset.label}: ${pct(c.raw, 1)} · ${FAROL_TXT[st[c.dataIndex]]}` } } } },
+    plugins:[labelPlugin, semDadoPlugin] });
 }
 const labelPlugin = { id:'lbl', afterDatasetsDraw(ch) { const ctx = ch.ctx; ctx.save(); ctx.font = "600 11px 'Poppins', Arial, sans-serif"; ctx.fillStyle = '#3e3e3e'; ctx.textAlign = 'center';
   ch.data.datasets.forEach((ds, di) => { if (ds.type === 'line' || ch.options.indexAxis === 'y') return; ch.getDatasetMeta(di).data.forEach((el, i) => { const v = ds.data[i]; if (v === null || v === undefined || (el.width && el.width < 30)) return; { const t = ds.fmt ? ds.fmt(v) : pct(v, 1); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.strokeText(t, el.x, el.y - 5); ctx.fillText(t, el.x, el.y - 5); } }); });
@@ -227,7 +233,7 @@ function renderAting() {
 }
 function renderPrint() {
   const sec = $('#tab-print'); renderSlicers(sec); const b = base();
-  $('#printHead').textContent = `Ano ${S.ano} · ${S.empresa || 'Todas'} · ${S.cargos.size ? [...S.cargos].join(', ') : 'Todos os cargos'} · Responsável: ${S.resp}`;
+  $('#printHead').textContent = `· Ano ${S.ano} · ${S.empresa || 'Todas'} · ${S.cargos.size ? [...S.cargos].join(', ') : 'Todos os cargos'} · Responsável: ${S.resp}`;
   $('#pt1').textContent = 'Mês: ' + S.mes;
   table($('#tblP1'), b.filter(r => r.mes === S.mes)); table($('#tblP2'), b.filter(r => r.mes === 'Acumulado'));
   atgChart('chMes3', b);

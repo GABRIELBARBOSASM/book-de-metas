@@ -120,3 +120,8 @@ footer{margin-top:auto}
 .gval{font-family:var(--head);font-size:25px;font-weight:600}.gst{font-size:10px;fill:#5f6c77;letter-spacing:1px;text-transform:uppercase}.gmk{font-size:9px;fill:#272e32;font-weight:600}
 .glbl{display:flex;gap:10px;width:100%;max-width:300px;margin-top:8px}.glbl>div{flex:1;text-align:center;background:#f5f6f7;border-radius:10px;padding:6px 4px}
 .glbl small{display:block;font-size:10px;color:var(--grey);text-transform:uppercase;letter-spacing:.8px}.glbl b{font-family:var(--head);font-size:17px;color:var(--dark)}
+/* Consolidado (antiga tela Print): cartões iguais ao Painel, mais espaço antes do gráfico */
+#tab-print .panel{margin-bottom:16px}#tab-print .cons-chart{margin-top:26px}
+#tab-print table.ind td.l{white-space:normal;max-width:none;min-width:200px}
+#tab-print .ptitle{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px}
+@media print{#tab-print .cons-chart{margin-top:10px}#tab-print .panel{border:1px solid #ddd}}
