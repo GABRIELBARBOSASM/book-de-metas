@@ -239,7 +239,7 @@ function renderAting() {
 }
 function renderPrint() {
   const sec = $('#tab-print'); renderSlicers(sec); const b = base();
-  $('#printHead').textContent = `· Ano ${S.ano} · ${S.empresa || 'Todas'} · ${S.cargos.size ? [...S.cargos].join(', ') : 'Todos os cargos'} · Responsável: ${S.resp}`;
+  $('#printHead').textContent = `· Ano ${S.ano} · ${S.empresa || 'Todas'} · ${S.cargos.size ? [...S.cargos].join(', ') : 'Todos os cargos'}`;
   $('#pt1').textContent = 'Mês: ' + S.mes;
   table($('#tblP1'), b.filter(r => r.mes === S.mes)); table($('#tblP2'), b.filter(r => r.mes === 'Acumulado'));
   atgChart('chMes3', b);
