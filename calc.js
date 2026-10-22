@@ -47,7 +47,7 @@
     return (r - meta) / meta;
   }
   function atgIndicador(sinal, limite, meta, real, opts = {}) {
-    if (isBlank(real) && !opts.pbiBlankAsZero) return 0;            // correção pedida: sem dado = 0
+    if (isBlank(real) && !opts.pbiBlankAsZero) return 0;            // correção pedida: sem dados = 0
     const d = deltaPct(meta, real);
     if (limite === 0.9999) {
       if (sinal === '↑') return d < -1 ? 0 : d > 0 ? 1 : 1 + d;

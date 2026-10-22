@@ -85,9 +85,9 @@ function table(el, rows) {
   for (const r of rows) {
     const f = C.farol(r);
     h += `<tr class="${r.semDado ? 'semdado' : ''}"><td class="l" title="${r.indicador}">${r.indicador}</td>${multi ? `<td class="l">${r.cargo} – ${r.responsavel}</td>` : ''}<td>${r.peso}</td><td class="c">${r.unidade}</td><td class="c">${r.sinal}</td>
-      <td>${pct(r.limite)}</td><td>${pct(r.desafio || 0, 1)}</td><td>${fmtV(r.meta, r)}</td><td>${r.semDado ? '<i>sem dado</i>' : fmtV(r.realizado, r)}</td>
+      <td>${pct(r.limite)}</td><td>${pct(r.desafio || 0, 1)}</td><td>${fmtV(r.meta, r)}</td><td>${r.semDado ? '<i>sem dados</i>' : fmtV(r.realizado, r)}</td>
       <td class="${r.delta < 0 ? 'neg' : ''}">${r.semDado ? '—' : fmtV(r.delta, r)}</td><td class="${r.deltaPct < 0 ? 'neg' : ''}">${r.semDado ? '—' : pct(r.deltaPct)}</td>
-      <td>${pct(r.atgInd)}</td><td class="c"><span class="f ${f}" title="${f === 'sem' ? 'sem dado' : pct(r.atgInd)}">${FAROL[f]}</span></td><td>${pct(r.atgBook3)}</td><td>${r.atgDesafio === null ? '' : pct(r.atgDesafio)}</td></tr>`;
+      <td>${pct(r.atgInd)}</td><td class="c"><span class="f ${f}" title="${f === 'sem' ? 'sem dados' : pct(r.atgInd)}">${FAROL[f]}</span></td><td>${pct(r.atgBook3)}</td><td>${r.atgDesafio === null ? '' : pct(r.atgDesafio)}</td></tr>`;
   }
   if (!rows.length) h += `<tr><td class="l" colspan="14">Nenhum indicador para os filtros selecionados.</td></tr>`;
   el.innerHTML = h;
@@ -111,7 +111,7 @@ function chart(id, cfg) { if (charts[id]) charts[id].destroy();
     sc.y = { ...(sc.y || {}), border:{ display:false }, grid:{ color:'rgba(39,46,50,.07)', drawTicks:false } }; } charts[id] = new Chart(document.getElementById(id), cfg); }
 const pctTick = { callback: v => nf(0).format(v * 100) + '%' };
 function atgChart(id, rows) {
-  // mesmo modelo do Painel: barras na cor do farol, linha Meta 100% grafite tracejada, rótulos, "sem dado"
+  // mesmo modelo do Painel: barras na cor do farol, linha Meta 100% grafite tracejada, rótulos, "sem dados"
   const s = bookSeries(rows), st = s.map(x => !x || x.book === null || x.book === undefined ? 'sem' : x.farol >= 1 ? 'ok' : x.farol >= 0.7 ? 'parcial' : 'falha');
   chart(id, { type:'bar', data:{ labels:MESES, datasets:[
     { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', borderDash:[5, 4], pointRadius:0, borderWidth:1.5 },
@@ -130,7 +130,7 @@ const labelPlugin = { id:'lbl', afterDatasetsDraw(ch) { const ctx = ch.ctx; ctx.
 
 // ---------- gráficos do indicador (cores = farol do calc.js, considerando ↑/↓ e Limite) ----------
 const FAROL_COR = { ok:'#1f9d55', parcial:'#f0a202', falha:'#a30000', sem:'#cfd4d8' };
-const FAROL_TXT = { ok:'Atingido', parcial:'Parcial', falha:'Não atingido', sem:'Sem dado' };
+const FAROL_TXT = { ok:'Atingido', parcial:'Parcial', falha:'Não atingido', sem:'Sem dados' };
 // atingimento de um ponto (mês ou acumulado) agregando as linhas filtradas, com as mesmas regras do modelo
 function atgPonto(x, ref) { return x.real === null || x.meta === null || !ref ? null : C.atgIndicador(ref.sinal, ref.limite, x.meta, x.real); }
 function statusPonto(x, ref) { const a = atgPonto(x, ref); return a === null ? 'sem' : C.farol({ semDado:false, atgInd:a }); }
@@ -142,7 +142,7 @@ const legendaFarol = (extra) => ({ position:'bottom', labels:{ usePointStyle:tru
   ...extra, ...['ok', 'parcial', 'falha', 'sem'].map(k => ({ text:FAROL_TXT[k], fillStyle:FAROL_COR[k], strokeStyle:FAROL_COR[k], pointStyle:'rectRounded', lineWidth:0 })) ] } });
 const semDadoPlugin = { id:'semdado', afterDatasetsDraw(ch) { const o = ch.options.plugins.semdado; if (!o) return; const ctx = ch.ctx, y = ch.scales.y.getPixelForValue(ch.scales.y.min);
   ctx.save(); ctx.font = "italic 10px 'Poppins', Arial, sans-serif"; ctx.fillStyle = '#8a959e'; ctx.textAlign = 'center';
-  o.forEach((on, i) => { if (on) ctx.fillText('sem dado', ch.scales.x.getPixelForValue(i), y - 6); }); ctx.restore(); } };
+  o.forEach((on, i) => { if (on) ctx.fillText('sem dados', ch.scales.x.getPixelForValue(i), y - 6); }); ctx.restore(); } };
 function indChart(id, M12, ref) {
   const st = M12.map(x => statusPonto(x, ref)), des = M12.map(x => desafioAlvo(x, ref)), temDes = des.some(v => v !== null);
   const ds = [
@@ -192,7 +192,7 @@ function renderPainel() {
   // cabeçalho de KPIs (estilo ACT / PLAN / Δ)
   const tb = cur.reduce((s, r) => s + r.atgBook3, 0) / g, td = cur.reduce((s, r) => s + r.atgBook4, 0) / g;
   kpiDelta($('#kDeltaBook'), cur.length ? td - tb : null, v => (v > 0 ? '+' : '') + nf(1).format(v * 100) + ' p.p.', null);
-  $('#kReal').textContent = ac.real === null ? 'sem dado' : fmtV(ac.real, ref); $('#kMeta').textContent = ac.meta === null ? '—' : fmtV(ac.meta, ref);
+  $('#kReal').textContent = ac.real === null ? 'sem dados' : fmtV(ac.real, ref); $('#kMeta').textContent = ac.meta === null ? '—' : fmtV(ac.meta, ref);
   const dlt = ac.real === null || ac.meta === null ? null : ac.real - ac.meta, aP = atgPonto(ac, ref);
   kpiDelta($('#kDelta'), dlt, v => `${v > 0 ? '+' : ''}${fmtV(v, ref)} | ${pct(aP, 1)}`, statusPonto(ac, ref), ref && ref.sinal === '↓');
   $$('#atgToggle button').forEach(bt => { bt.classList.toggle('on', bt.dataset.v === S.atgView); bt.onclick = () => { S.atgView = bt.dataset.v; render(); }; });
@@ -212,7 +212,7 @@ function gauge(el, ac, ref) {
   el.innerHTML = `<svg viewBox="-12 -14 224 124" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Acumulado">
     <path d="${arc}" fill="none" stroke="#eef0f1" stroke-width="18" stroke-linecap="round"/>
     ${f > 0 ? `<path d="${arc}" fill="none" stroke="${cor}" stroke-width="18" stroke-linecap="round" pathLength="100" stroke-dasharray="${(f * 100).toFixed(2)} 200"/>` : ''}
-    ${mk}<text x="100" y="86" text-anchor="middle" class="gval" fill="${sem ? '#8a959e' : cor}">${sem ? 'sem dado' : pct(at, 1)}</text>
+    ${mk}<text x="100" y="86" text-anchor="middle" class="gval" fill="${sem ? '#8a959e' : cor}">${sem ? 'sem dados' : pct(at, 1)}</text>
     <text x="100" y="102" text-anchor="middle" class="gst">${FAROL_TXT[st]}</text></svg>
     <div class="glbl"><div><small>Realizado</small><b>${sem ? '—' : fmtV(ac.real, ref)}</b></div><div><small>Meta</small><b>${ac.meta === null ? '—' : fmtV(ac.meta, ref)}</b></div></div>`;
 }
