@@ -246,13 +246,16 @@ function gauge(el, ac, ref) {
   if (dv !== null) { const fd = Math.max(0, Math.min(1, dv / mx)), c = Math.cos(Math.PI * fd), s = Math.sin(Math.PI * fd);
     const near = fm !== null && Math.abs(fd - fm) < 0.09, rr = near ? 118 : 106, dy = near ? (fd < fm ? 6 : -6) : 0;
     mk += `<line x1="${100 - 62 * c}" y1="${100 - 62 * s}" x2="${100 - 98 * c}" y2="${100 - 98 * s}" stroke="#5f6c77" stroke-width="2.2" stroke-dasharray="4 3"/><text x="${100 - rr * c}" y="${100 - rr * s + dy}" class="gmk gdes" text-anchor="middle" dominant-baseline="middle">Desafio</text>`; }
+  // atingimento do desafio no acumulado (mesma regra do gráfico "Desafio Indicador")
+  const dd = ref && C.num(ref.desafio), ad = dd && ac.real !== null && ac.meta !== null ? C.atgDesafio(ref.sinal, dd, ac.meta, ac.real) : null;
+  const adCor = ad === null ? '#8a959e' : FAROL_COR[ad >= 1 ? 'ok' : ad >= 0.7 ? 'parcial' : 'falha'];
   const sem = ac.real === null, gv = sem ? 'sem dados' : fmtV(ac.real, ref), gfs = Math.max(14, Math.min(25, 190 / Math.max(gv.length, 1)));
   el.innerHTML = `<svg viewBox="-12 -14 224 124" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Acumulado">
     <path d="${arc}" fill="none" stroke="#eef0f1" stroke-width="18" stroke-linecap="round"/>
     ${f > 0 ? `<path d="${arc}" fill="none" stroke="${cor}" stroke-width="18" stroke-linecap="round" pathLength="100" stroke-dasharray="${(f * 100).toFixed(2)} 200"/>` : ''}
     ${mk}<text x="100" y="86" text-anchor="middle" class="gval" font-size="${gfs.toFixed(1)}" fill="${sem ? '#8a959e' : cor}">${gv}</text>
     <text x="100" y="102" text-anchor="middle" class="gst">${FAROL_TXT[st]}</text></svg>
-    <div class="glbl">${dv !== null ? `<div><small>Desafio</small><b>${fmtV(dv, ref)}</b></div>` : ''}<div><small>Meta</small><b>${ac.meta === null ? '—' : fmtV(ac.meta, ref)}</b></div><div><small>Atingimento</small><b>${at === null ? '—' : pct(at, 1)}</b></div></div>`;
+    <div class="glbl${dv !== null ? ' g4' : ''}">${dv !== null ? `<div><small>Desafio</small><b>${fmtV(dv, ref)}</b></div><div><small>Atingimento Desafio</small><b style="color:${adCor}">${ad === null ? '—' : pct(ad, 1)}</b></div>` : ''}<div><small>Meta</small><b>${ac.meta === null ? '—' : fmtV(ac.meta, ref)}</b></div><div><small>Atingimento</small><b style="color:${at === null ? '#8a959e' : cor}">${at === null ? '—' : pct(at, 1)}</b></div></div>`;
 }
 // KPIs Atingimento Book / Desafio / Δ (mesma regra do Painel) para um conjunto de linhas
 function kpiBook(p, rows) { const g = new Set(rows.map(r => r.c5 + r.responsavel)).size || 1;
