@@ -177,18 +177,27 @@ function indAtgChart(id, P13, ref) {
     plugins:[labelPlugin, semDadoPlugin] });
 }
 
-function desChart(id, rows) {
-  // Atingimento do DESAFIO do Book: barras na cor do farol, apenas a linha tracejada do Desafio (100%)
-  const s = bookSeries(rows), v = s.map(x => x ? x.desf : null), st = v.map(x => x === null || x === undefined ? 'sem' : x >= 1 ? 'ok' : x >= 0.7 ? 'parcial' : 'falha');
+function desChart(id, rows) { const s = bookSeries(rows); desBars(id, s.map(x => x ? x.desf : null)); }
+// Desafio de UM indicador (selInd): mesmas regras do calc.js (C.atgDesafio, respeita ↑/↓; Realizado em branco = sem dados)
+function desIndChart(id, P13, ref) {
+  const d = ref && C.num(ref.desafio);
+  if (!d) return desBars(id, P13.map(() => null), 'Indicador sem desafio');
+  desBars(id, P13.map(x => x.real === null || x.meta === null ? null : C.atgDesafio(ref.sinal, d, x.meta, x.real)), null, P13.map((x, i) => x.real === null && x.meta !== null && (i === 12 || mesEsperado(i))));
+}
+const vazioPlugin = { id:'vazio', afterDraw(ch) { const t = ch.options.plugins.vazio; if (!t) return; const a = ch.chartArea, ctx = ch.ctx; ctx.save();
+  ctx.font = "600 14px 'Poppins', Arial, sans-serif"; ctx.fillStyle = '#8a959e'; ctx.textAlign = 'center'; ctx.fillText(t, (a.left + a.right) / 2, (a.top + a.bottom) / 2); ctx.restore(); } };
+function desBars(id, v, vazio, sd) {
+  // Atingimento do DESAFIO: barras na cor do farol, apenas a linha tracejada do Desafio (100%)
+  const st = v.map(x => x === null || x === undefined ? 'sem' : x >= 1 ? 'ok' : x >= 0.7 ? 'parcial' : 'falha');
   chart(id, { type:'bar', data:{ labels:MESES, datasets:[
     { type:'line', label:'Desafio 100%', data:MESES.map(() => 1), borderColor:'#5f6c77', borderDash:[6, 5], pointRadius:0, borderWidth:1.8 },
     { label:'Atingimento Desafio', data:v, backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46 } ] },
     options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
       scales:{ x:{ ...AX, ticks:{ padding:6, maxRotation:0, autoSkip:false } }, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
-      plugins:{ legend:legendaFarol([{ text:'Desafio 100%', fillStyle:'#5f6c77', strokeStyle:'#5f6c77', pointStyle:'dash', lineWidth:2, lineDash:[6, 5] }]),
-        semdado:v.map((x, i) => st[i] === 'sem' && (i === 12 || mesEsperado(i))),
+      plugins:{ legend:legendaFarol([{ text:'Desafio 100%', fillStyle:'#5f6c77', strokeStyle:'#5f6c77', pointStyle:'dash', lineWidth:2, lineDash:[6, 5] }]), vazio,
+        semdado:vazio ? null : sd || v.map((x, i) => st[i] === 'sem' && (i === 12 || mesEsperado(i))),
         tooltip:{ padding:10, callbacks:{ label:c => c.dataset.label === 'Desafio 100%' ? ' Desafio: 100%' : ` Atingimento Desafio: ${pct(c.raw, 1)} · ${FAROL_TXT[st[c.dataIndex]]}` } } } },
-    plugins:[labelPlugin, semDadoPlugin] });
+    plugins:[labelPlugin, semDadoPlugin, vazioPlugin] });
 }
 
 // ---------- páginas ----------
@@ -214,8 +223,8 @@ function renderPainel() {
   const dlt = ac.real === null || ac.meta === null ? null : ac.real - ac.meta, aP = atgPonto(ac, ref);
   kpiDelta($('#kDelta'), dlt, v => `${v > 0 ? '+' : ''}${fmtV(v, ref)} | ${pct(aP, 1)}`, statusPonto(ac, ref), ref && ref.sinal === '↓');
   $$('#atgToggle button').forEach(bt => { bt.classList.toggle('on', bt.dataset.v === S.atgView); bt.onclick = () => { S.atgView = bt.dataset.v; render(); }; });
-  $('#atgSub').textContent = S.atgView === 'book' ? '· Book (todos os indicadores)' : S.atgView === 'des' ? '· Desafio do Book (todos os indicadores)' : (S.selInd ? '· ' + S.selInd : '');
-  if (S.atgView === 'book') atgChart('chAtg', b); else if (S.atgView === 'des') desChart('chAtg', b); else indAtgChart('chAtg', [...M12, ac], ref);
+  $('#atgSub').textContent = S.atgView === 'book' ? '· Book (todos os indicadores)' : S.atgView === 'des' ? '· Desafio do Book (todos os indicadores)' : S.atgView === 'desind' ? (S.selInd ? '· Desafio · ' + S.selInd : '') : (S.selInd ? '· ' + S.selInd : '');
+  if (S.atgView === 'book') atgChart('chAtg', b); else if (S.atgView === 'des') desChart('chAtg', b); else if (S.atgView === 'desind') desIndChart('chAtg', [...M12, ac], ref); else indAtgChart('chAtg', [...M12, ac], ref);
 }
 // velocímetro (SVG semicircular): preenchimento na cor do farol, marcador da meta
 function gauge(el, ac, ref) {
