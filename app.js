@@ -236,7 +236,7 @@ function gauge(el, ac, ref) {
     ${f > 0 ? `<path d="${arc}" fill="none" stroke="${cor}" stroke-width="18" stroke-linecap="round" pathLength="100" stroke-dasharray="${(f * 100).toFixed(2)} 200"/>` : ''}
     ${mk}<text x="100" y="86" text-anchor="middle" class="gval" fill="${sem ? '#8a959e' : cor}">${sem ? 'sem dados' : pct(at, 1)}</text>
     <text x="100" y="102" text-anchor="middle" class="gst">${FAROL_TXT[st]}</text></svg>
-    <div class="glbl"><div><small>Realizado</small><b>${sem ? '—' : fmtV(ac.real, ref)}</b></div><div><small>Meta</small><b>${ac.meta === null ? '—' : fmtV(ac.meta, ref)}</b></div>${dv !== null ? `<div><small>Desafio</small><b>${fmtV(dv, ref)}</b></div>` : ''}</div>`;
+    <div class="glbl">${dv !== null ? `<div><small>Desafio</small><b>${fmtV(dv, ref)}</b></div>` : ''}<div><small>Meta</small><b>${ac.meta === null ? '—' : fmtV(ac.meta, ref)}</b></div><div><small>Realizado</small><b>${sem ? '—' : fmtV(ac.real, ref)}</b></div></div>`;
 }
 // KPIs Atingimento Book / Desafio / Δ (mesma regra do Painel) para um conjunto de linhas
 function kpiBook(p, rows) { const g = new Set(rows.map(r => r.c5 + r.responsavel)).size || 1;
