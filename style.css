@@ -163,3 +163,7 @@ footer span:first-of-type{flex:0 1 auto}@media (max-width:900px){.brdesk{display
 .refresh.spin svg{animation:girar .8s linear infinite}@keyframes girar{to{transform:rotate(360deg)}}
 @media (max-width:900px){.updwrap{margin-left:auto;gap:6px}.refresh{width:28px;height:28px}}
 .gdes{fill:#5f6c77}.gauge svg{overflow:visible}.glbl b{white-space:nowrap}
+
+.toggle.atgg{gap:22px;flex-wrap:wrap;align-items:center}.tgrp{display:flex;align-items:center;gap:4px}.tlbl{font-size:11px;color:#8a959e;font-weight:500;margin-right:4px;white-space:nowrap}
+@media(max-width:700px){.toggle.atgg{gap:8px;width:100%;flex-direction:column;align-items:stretch}.tgrp .tlbl{width:128px;margin-right:0}.tgrp button{flex:1;padding:6px 6px}}
+@media(max-width:700px){.tgrp button{white-space:nowrap;font-size:11px}.tgrp .tlbl{width:auto;flex:0 0 112px;white-space:normal;font-size:10.5px}}
