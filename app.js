@@ -2,6 +2,7 @@
 const C = BookCalc, MESES = C.MESES, EMPRESAS = ['CSC','Ferguminas','MIB','MIG','MML','SM Metais','SM Mineração'];
 let ROWS = [], S = { ano:null, mes:null, empresa:'CSC', cargos:new Set(), resp:'Todos', nivel:'Todos', indicador:'Todos', selInd:null, atgView:'ind' };
 const charts = {};
+let LAST_SRC = null; // última fonte carregada (para o botão Atualizar)
 if (window.Chart) { Chart.defaults.font.family = "'Poppins', Arial, sans-serif"; Chart.defaults.color = '#5f6c77'; Chart.defaults.borderColor = '#eef0f1'; }
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const nf = (d) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits:d, maximumFractionDigits:d });
@@ -33,9 +34,9 @@ function loadAoa(metaAoa, realAoa, isDemo, stamp) {
   $('#demoBanner').classList.toggle('hidden', !isDemo); $('#drop').classList.add('hidden'); $('#main').classList.remove('hidden');
   render();
 }
-function readFile(f) { const fr = new FileReader(); fr.onload = e => { try { loadWorkbook(new Uint8Array(e.target.result), false, new Date(f.lastModified).toLocaleString('pt-BR', { timeZone:'America/Sao_Paulo' })); } catch (err) { alert('Erro ao ler o arquivo: ' + err.message); } }; fr.readAsArrayBuffer(f); }
+function readFile(f) { const fr = new FileReader(); fr.onload = e => { try { LAST_SRC = { kind:'file', buf:new Uint8Array(e.target.result) }; loadWorkbook(new Uint8Array(e.target.result), false, new Date(f.lastModified).toLocaleString('pt-BR', { timeZone:'America/Sao_Paulo' })); } catch (err) { alert('Erro ao ler o arquivo: ' + err.message); } }; fr.readAsArrayBuffer(f); }
 $('#file').onchange = e => e.target.files[0] && readFile(e.target.files[0]);
-$('#demo').onclick = () => { const b = atob(window.DEMO_XLSX_B64), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); loadWorkbook(u, true); };
+$('#demo').onclick = () => { LAST_SRC = { kind:'demo' }; const b = atob(window.DEMO_XLSX_B64), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); loadWorkbook(u, true); };
 ['dragover','dragenter'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); $('#drop').classList.add('over'); }));
 document.addEventListener('dragleave', () => $('#drop').classList.remove('over'));
 document.addEventListener('drop', e => { e.preventDefault(); $('#drop').classList.remove('over'); const f = e.dataTransfer.files[0]; if (f) readFile(f); });
@@ -205,19 +206,23 @@ function renderPainel() {
 // velocímetro (SVG semicircular): preenchimento na cor do farol, marcador da meta
 function gauge(el, ac, ref) {
   const st = statusPonto(ac, ref), cor = st === 'sem' ? '#cfd4d8' : FAROL_COR[st], at = atgPonto(ac, ref);
-  const mx = Math.max(Math.abs(ac.real || 0), Math.abs(ac.meta || 0)) * 1.2 || 1;
+  const dv = desafioAlvo(ac, ref), mx = Math.max(Math.abs(ac.real || 0), Math.abs(ac.meta || 0), Math.abs(dv || 0)) * 1.2 || 1;
   const f = ac.real === null ? 0 : Math.max(0, Math.min(1, ac.real / mx)), fm = ac.meta === null ? null : Math.max(0, Math.min(1, ac.meta / mx));
   const P = t => [100 - 80 * Math.cos(Math.PI * t), 100 - 80 * Math.sin(Math.PI * t)], arc = 'M20 100 A80 80 0 0 1 180 100';
   let mk = ''; if (fm !== null) { const [x1, y1] = [100 - 64 * Math.cos(Math.PI * fm), 100 - 64 * Math.sin(Math.PI * fm)], [x2, y2] = [100 - 96 * Math.cos(Math.PI * fm), 100 - 96 * Math.sin(Math.PI * fm)];
     const [tx, ty] = [100 - 106 * Math.cos(Math.PI * fm), 100 - 106 * Math.sin(Math.PI * fm)];
     mk = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#272e32" stroke-width="3" stroke-linecap="round"/><text x="${tx}" y="${ty}" class="gmk" text-anchor="middle" dominant-baseline="middle">Meta</text>`; }
+  // marcador tracejado do Desafio (mesmo estilo da linha Desafio do gráfico ao lado)
+  if (dv !== null) { const fd = Math.max(0, Math.min(1, dv / mx)), c = Math.cos(Math.PI * fd), s = Math.sin(Math.PI * fd);
+    const near = fm !== null && Math.abs(fd - fm) < 0.09, rr = near ? 118 : 106, dy = near ? (fd < fm ? 6 : -6) : 0;
+    mk += `<line x1="${100 - 62 * c}" y1="${100 - 62 * s}" x2="${100 - 98 * c}" y2="${100 - 98 * s}" stroke="#5f6c77" stroke-width="2.2" stroke-dasharray="4 3"/><text x="${100 - rr * c}" y="${100 - rr * s + dy}" class="gmk gdes" text-anchor="middle" dominant-baseline="middle">Desafio</text>`; }
   const sem = ac.real === null;
   el.innerHTML = `<svg viewBox="-12 -14 224 124" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Acumulado">
     <path d="${arc}" fill="none" stroke="#eef0f1" stroke-width="18" stroke-linecap="round"/>
     ${f > 0 ? `<path d="${arc}" fill="none" stroke="${cor}" stroke-width="18" stroke-linecap="round" pathLength="100" stroke-dasharray="${(f * 100).toFixed(2)} 200"/>` : ''}
     ${mk}<text x="100" y="86" text-anchor="middle" class="gval" fill="${sem ? '#8a959e' : cor}">${sem ? 'sem dados' : pct(at, 1)}</text>
     <text x="100" y="102" text-anchor="middle" class="gst">${FAROL_TXT[st]}</text></svg>
-    <div class="glbl"><div><small>Realizado</small><b>${sem ? '—' : fmtV(ac.real, ref)}</b></div><div><small>Meta</small><b>${ac.meta === null ? '—' : fmtV(ac.meta, ref)}</b></div></div>`;
+    <div class="glbl"><div><small>Realizado</small><b>${sem ? '—' : fmtV(ac.real, ref)}</b></div><div><small>Meta</small><b>${ac.meta === null ? '—' : fmtV(ac.meta, ref)}</b></div>${dv !== null ? `<div><small>Desafio</small><b>${fmtV(dv, ref)}</b></div>` : ''}</div>`;
 }
 // KPIs Atingimento Book / Desafio / Δ (mesma regra do Painel) para um conjunto de linhas
 function kpiBook(p, rows) { const g = new Set(rows.map(r => r.c5 + r.responsavel)).size || 1;
@@ -252,4 +257,26 @@ function renderPrint() {
 }
 function render() { if (!ROWS.length) return; ({ painel:renderPainel, ating:renderAting, print:renderPrint })[curTab()](); }
 if (location.hash === '#demo' || !window.REAL_DATA) $('#demo').click();
-else if (window.REAL_DATA) loadAoa(REAL_DATA.meta, REAL_DATA.realizado, false, REAL_DATA.mtime);
+else if (window.REAL_DATA) (LAST_SRC = { kind:'real' }, loadAoa(REAL_DATA.meta, REAL_DATA.realizado, false, REAL_DATA.mtime));
+
+// ---------- botão Atualizar: recarrega a mesma fonte (demo, arquivo ou dados embutidos) mantendo os filtros ----------
+// Produção: refazer o fetch de /api/book?refresh=1 (a API ignora o cache de ~10 min, com limite de 1x/min por usuário).
+$('#btnRefresh').onclick = () => {
+  const btn = $('#btnRefresh'); if (btn.disabled || !LAST_SRC) return; btn.disabled = true; btn.classList.add('spin');
+  const keep = { ...S, cargos:new Set(S.cargos) }, tab = curTab();
+  setTimeout(() => {
+    try {
+      const now = new Date().toLocaleString('pt-BR', { timeZone:'America/Sao_Paulo' });
+      if (LAST_SRC.kind === 'demo') { const b = atob(window.DEMO_XLSX_B64), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); loadWorkbook(u, true, now); }
+      else if (LAST_SRC.kind === 'file') loadWorkbook(LAST_SRC.buf, false, now);
+      else loadAoa(REAL_DATA.meta, REAL_DATA.realizado, false, now);
+      // restaura filtros que ainda existem nos dados
+      if (ROWS.some(r => r.ano === keep.ano)) S.ano = keep.ano;
+      if (keep.empresa === null || ROWS.some(r => r.empresa === keep.empresa)) S.empresa = keep.empresa;
+      S.mes = keep.mes; S.cargos = new Set([...keep.cargos].filter(c => ROWS.some(r => r.cargo === c)));
+      S.resp = keep.resp; S.nivel = keep.nivel; S.indicador = keep.indicador; S.selInd = keep.selInd; S.atgView = keep.atgView;
+      render();
+    } catch (err) { alert('Erro ao atualizar: ' + err.message); }
+    setTimeout(() => { btn.disabled = false; btn.classList.remove('spin'); }, 450);
+  }, 60);
+};

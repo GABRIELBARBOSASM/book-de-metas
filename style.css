@@ -155,3 +155,11 @@ footer span:first-of-type{flex:0 1 auto}@media (max-width:900px){.brdesk{display
 #tab-print .kpi{display:flex;align-items:baseline;justify-content:center;gap:8px}
 #tab-print .kpi small{font-size:10px;display:inline}#tab-print .kpi b{display:inline;font-size:16px}#tab-print .kpi b.delta{font-size:14px;padding-top:0}
 @media print{#tab-print .kpis{margin:0 0 1mm;padding:0.5mm 0 1mm}#tab-print .kpi small{font-size:6.5pt}#tab-print .kpi b{font-size:10pt}#tab-print .kpi b.delta{font-size:9pt}}
+/* botão Atualizar ao lado do horário */
+.updwrap{display:flex;align-items:center;gap:10px}
+.refresh{width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,.45);background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .15s,border-color .15s}
+.refresh svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.refresh:hover{background:var(--red);border-color:var(--red)}.refresh:disabled{cursor:wait;opacity:.8}
+.refresh.spin svg{animation:girar .8s linear infinite}@keyframes girar{to{transform:rotate(360deg)}}
+@media (max-width:900px){.updwrap{margin-left:auto;gap:6px}.refresh{width:28px;height:28px}}
+.gdes{fill:#5f6c77}.gauge svg{overflow:visible}.glbl b{white-space:nowrap}
