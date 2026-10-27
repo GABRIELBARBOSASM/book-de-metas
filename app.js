@@ -303,3 +303,14 @@ $('#btnRefresh').onclick = () => {
     setTimeout(() => { btn.disabled = false; btn.classList.remove('spin'); }, 450);
   }, 60);
 };
+
+// ---------- topo congelado: mede a barra de título e decide se os filtros também ficam fixos (mobile: até ~40% da tela) ----------
+function stickyLayout() {
+  const top = document.querySelector('.top'), th = top ? top.offsetHeight : 0; document.documentElement.style.setProperty('--toph', th + 'px');
+  const f = document.querySelector('.tab:not(.hidden)>.panel.filters'); if (!f) return;
+  document.body.classList.toggle('nostick', th + f.offsetHeight > innerHeight * 0.4 && innerWidth < 900);
+  f.classList.toggle('stuck', !document.body.classList.contains('nostick') && f.getBoundingClientRect().top <= th + 1 && scrollY > 0);
+}
+addEventListener('scroll', stickyLayout, { passive:true }); addEventListener('resize', stickyLayout);
+{ const r0 = render; render = function () { r0.apply(this, arguments); stickyLayout(); }; }
+setTimeout(stickyLayout, 0);

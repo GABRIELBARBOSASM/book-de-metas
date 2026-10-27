@@ -167,3 +167,9 @@ footer span:first-of-type{flex:0 1 auto}@media (max-width:900px){.brdesk{display
 .toggle.atgg{gap:22px;flex-wrap:wrap;align-items:center}.tgrp{display:flex;align-items:center;gap:4px}.tlbl{font-size:11px;color:#8a959e;font-weight:500;margin-right:4px;white-space:nowrap}
 @media(max-width:700px){.toggle.atgg{gap:8px;width:100%;flex-direction:column;align-items:stretch}.tgrp .tlbl{width:128px;margin-right:0}.tgrp button{flex:1;padding:6px 6px}}
 @media(max-width:700px){.tgrp button{white-space:nowrap;font-size:11px}.tgrp .tlbl{width:auto;flex:0 0 112px;white-space:normal;font-size:10.5px}}
+/* topo congelado: barra de título + card de filtros */
+.top{position:sticky!important;top:0;z-index:30}
+.tab>.panel.filters{position:sticky;top:var(--toph,64px);z-index:20;transition:box-shadow .15s}
+.tab>.panel.filters.stuck{box-shadow:0 6px 14px -6px rgba(39,46,50,.35);border-top-left-radius:0;border-top-right-radius:0}
+body.nostick .tab>.panel.filters{position:static}
+@media print{.top,.tab>.panel.filters{position:static!important;box-shadow:none!important}}
