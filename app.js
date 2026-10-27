@@ -159,8 +159,13 @@ function indChart(id, M12, ref) {
     options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
       scales:{ x:AX, y:{ beginAtZero:true, grace:'12%', border:{ display:false }, grid:GRID, ticks:{ padding:8, callback:v => fmtV(v, ref) } } },
       plugins:{ legend:legendaFarol(extra), semdado:M12.map((x, i) => x.real === null && x.meta !== null && mesEsperado(i)),
-        tooltip:{ padding:10, callbacks:{ label:c => { const x = M12[c.dataIndex]; if (c.dataset.label === 'Realizado') return ` Realizado: ${fmtV(c.raw, ref)} · ${FAROL_TXT[st[c.dataIndex]]} (${pct(atgPonto(x, ref), 0)})`;
-          return ` ${c.dataset.label}: ${fmtV(c.raw, ref)}`; } } } } },
+        tooltip:{ mode:'index', intersect:false, padding:10, usePointStyle:true,
+          itemSort:(a, b) => ['Desafio', 'Meta', 'Realizado'].indexOf(a.dataset.label) - ['Desafio', 'Meta', 'Realizado'].indexOf(b.dataset.label),
+          callbacks:{ label:c => ` ${c.dataset.label}: ${c.raw === null || c.raw === undefined ? 'sem dados' : fmtV(c.raw, ref)}`,
+            labelColor:c => { const k = c.dataset.label === 'Realizado' ? FAROL_COR[st[c.dataIndex]] : c.dataset.borderColor; return { borderColor:k, backgroundColor:k }; },
+            labelPointStyle:c => ({ pointStyle:c.dataset.label === 'Realizado' ? 'rectRounded' : c.dataset.label === 'Desafio' ? 'dash' : 'line', rotation:0 }),
+            footer:items => { const i = items[0]?.dataIndex; if (i === undefined) return ''; const x = M12[i];
+              return x.real === null ? '' : `${FAROL_TXT[st[i]]} · Atingimento ${pct(atgPonto(x, ref), 0)}`; } } } } },
     plugins:[labelPlugin, semDadoPlugin] });
 }
 // Atingimento do INDICADOR selecionado (como no Power BI), mês a mês + Acumulado
