@@ -143,7 +143,8 @@ const mesEsperado = i => S.ano !== String(new Date().getFullYear()) || i < LIM;
 function desafioAlvo(x, ref) { const d = ref && C.num(ref.desafio); if (!d || x.meta === null) return null; return ref.sinal === '↓' ? x.meta * (1 - d) : x.meta * (1 + d); }
 const GRID = { color:'rgba(39,46,50,.07)', drawTicks:false }, AX = { grid:{ display:false }, ticks:{ padding:6 } };
 const legendaFarol = (extra) => ({ position:'bottom', labels:{ usePointStyle:true, boxWidth:10, padding:14, generateLabels: () => [
-  ...extra, ...['ok', 'parcial', 'falha', 'sem'].map(k => ({ text:FAROL_TXT[k], fillStyle:FAROL_COR[k], strokeStyle:FAROL_COR[k], pointStyle:'rectRounded', lineWidth:0 })) ] } });
+  // espaço maior entre o grupo de linhas (Meta/Desafio) e o grupo de colunas (farol)
+  ...extra.map((e, i) => i === extra.length - 1 ? { ...e, text:e.text + '\u2003\u2003\u2003' } : e), ...['ok', 'parcial', 'falha', 'sem'].map(k => ({ text:FAROL_TXT[k], fillStyle:FAROL_COR[k], strokeStyle:FAROL_COR[k], pointStyle:'rectRounded', lineWidth:0 })) ] } });
 const semDadoPlugin = { id:'semdado', afterDatasetsDraw(ch) { const o = ch.options.plugins.semdado; if (!o) return; const ctx = ch.ctx, y = ch.scales.y.getPixelForValue(ch.scales.y.min);
   ctx.save(); ctx.font = "italic 10px 'Poppins', Arial, sans-serif"; ctx.fillStyle = '#8a959e'; ctx.textAlign = 'center';
   o.forEach((on, i) => { if (on) ctx.fillText('sem dados', ch.scales.x.getPixelForValue(i), y - 6); }); ctx.restore(); } };
