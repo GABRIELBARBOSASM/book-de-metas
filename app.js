@@ -1,6 +1,6 @@
 /* Book de Metas – app */
 const C = BookCalc, MESES = C.MESES, EMPRESAS = ['CSC','Ferguminas','MIB','MIG','MML','SM Metais','SM Mineração'];
-let ROWS = [], S = { ano:null, mes:null, empresa:'CSC', cargos:new Set(), resp:'Todos', nivel:'Todos', indicador:'Todos', selInd:null, atgView:'ind' };
+let ROWS = [], S = { ano:null, mes:null, empresa:'CSC', cargos:new Set(), resp:'Todos', nivel:'Todos', indicador:'Todos', selInd:null, atgView:'ind', atgSer:new Set(['des','meta','real']) };
 const charts = {};
 let LAST_SRC = null; // última fonte carregada (para o botão Atualizar)
 if (window.Chart) { Chart.defaults.font.family = "'Poppins', Arial, sans-serif"; Chart.defaults.color = '#5f6c77'; Chart.defaults.borderColor = '#eef0f1'; }
@@ -114,19 +114,6 @@ function chart(id, cfg) { if (charts[id]) charts[id].destroy();
   if (cfg.type !== 'doughnut') { const sc = cfg.options.scales = cfg.options.scales || {}; sc.x = { ...(sc.x || {}), grid:{ display:false } };
     sc.y = { ...(sc.y || {}), border:{ display:false }, grid:{ color:'rgba(39,46,50,.07)', drawTicks:false } }; } charts[id] = new Chart(document.getElementById(id), cfg); }
 const pctTick = { callback: v => nf(0).format(v * 100) + '%' };
-function atgChart(id, rows) {
-  // mesmo modelo do Painel: barras na cor do farol, linha Meta 100% grafite tracejada, rótulos, "sem dados"
-  const s = bookSeries(rows), st = s.map(x => !x || x.book === null || x.book === undefined ? 'sem' : x.farol >= 1 ? 'ok' : x.farol >= 0.7 ? 'parcial' : 'falha');
-  chart(id, { type:'bar', data:{ labels:MESES, datasets:[
-    { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', borderDash:[5, 4], pointRadius:0, borderWidth:1.5 },
-    { label:'Atingimento Book', data:s.map(x => x && x.book), backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46 } ] },
-    options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
-      scales:{ x:{ ...AX, ticks:{ padding:6, maxRotation:0, autoSkip:false } }, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
-      plugins:{ legend:legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:2, lineDash:[5, 4] }]),
-        semdado:s.map((x, i) => st[i] === 'sem' && (i === 12 || mesEsperado(i))),
-        tooltip:{ padding:10, callbacks:{ label:c => c.dataset.label === 'Meta 100%' ? ' Meta: 100%' : ` ${c.dataset.label}: ${pct(c.raw, 1)} · ${FAROL_TXT[st[c.dataIndex]]}` } } } },
-    plugins:[labelPlugin, semDadoPlugin] });
-}
 const labelPlugin = { id:'lbl', afterDatasetsDraw(ch) { const ctx = ch.ctx; ctx.save(); ctx.font = "600 11px 'Poppins', Arial, sans-serif"; ctx.fillStyle = '#3e3e3e'; ctx.textAlign = 'center';
   ch.data.datasets.forEach((ds, di) => { if (ds.type === 'line' || ch.options.indexAxis === 'y') return; ch.getDatasetMeta(di).data.forEach((el, i) => { const v = ds.data[i]; if (v === null || v === undefined || (el.width && el.width < 30)) return; { const t = ds.fmt ? ds.fmt(v) : pct(v, 1); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.strokeText(t, el.x, el.y - 5); ctx.fillText(t, el.x, el.y - 5); } }); });
   if (ch.options.indexAxis === 'y') { ctx.textAlign = 'left'; ch.data.datasets.forEach((ds, di) => ch.getDatasetMeta(di).data.forEach((el, i) => ctx.fillText(pct(ds.data[i], 1), el.x + 4, el.y + 4))); }
@@ -163,18 +150,30 @@ function indChart(id, M12, ref) {
           return ` ${c.dataset.label}: ${fmtV(c.raw, ref)}`; } } } } },
     plugins:[labelPlugin, semDadoPlugin] });
 }
-// Atingimento do INDICADOR selecionado (como no Power BI), mês a mês + Acumulado
-function indAtgChart(id, P13, ref) {
-  const at = P13.map(x => atgPonto(x, ref)), st = P13.map(x => statusPonto(x, ref));
-  chart(id, { type:'bar', data:{ labels:MESES, datasets:[
-    { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', borderDash:[5, 4], pointRadius:0, borderWidth:1.5 },
-    { label:'Atingimento', data:at, backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46 } ] },
+// Atingimento (Painel): séries na ordem Desafio, Meta, Realizado; cada uma pode ser ligada/desligada
+function atgGen(id, real, st, desLine, semdado, realLbl) {
+  const on = k => S.atgSer.has(k), ds = [], extra = [];
+  const temDes = desLine.some(v => v !== null && v !== undefined);
+  if (on('des') && temDes) { ds.push({ type:'line', label:'Desafio', data:desLine, borderColor:'#5f6c77', borderDash:[6, 5], borderWidth:1.8, pointRadius:desLine.some((v, i) => v !== desLine[0]) ? 3 : 0, pointBackgroundColor:'#5f6c77', tension:0, order:1, spanGaps:false });
+    extra.push({ text:'Desafio', fillStyle:'#5f6c77', strokeStyle:'#5f6c77', pointStyle:'dash', lineWidth:2, lineDash:[6, 5] }); }
+  if (on('meta')) { ds.push({ type:'line', label:'Meta', data:MESES.map(() => 1), borderColor:'#272e32', pointRadius:0, borderWidth:2, order:0 });
+    extra.push({ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:3 }); }
+  if (on('real')) ds.push({ label:realLbl, data:real, backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46, order:2 });
+  const lg = legendaFarol(extra); if (!on('real')) lg.labels.generateLabels = () => extra;
+  chart(id, { type:'bar', data:{ labels:MESES, datasets:ds },
     options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
-      scales:{ x:{ ...AX, ticks:{ padding:6, maxRotation:0, autoSkip:false } }, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
-      plugins:{ legend:legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:2, lineDash:[5, 4] }]),
-        semdado:P13.map((x, i) => x.real === null && x.meta !== null && (i === 12 || mesEsperado(i))),
-        tooltip:{ padding:10, callbacks:{ label:c => c.dataset.label === 'Atingimento' ? ` Atingimento: ${pct(c.raw, 1)} · ${FAROL_TXT[st[c.dataIndex]]}` : ' Meta: 100%' } } } },
+      scales:{ x:{ ...AX, ticks:{ padding:6, maxRotation:0, autoSkip:innerWidth < 700, font:{ size:innerWidth < 700 ? 10 : 12 } } }, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
+      plugins:{ legend:lg, semdado:on('real') ? semdado : null,
+        tooltip:{ padding:10, callbacks:{ label:c => c.dataset.label === 'Meta' ? ' Meta: 100%' : c.dataset.label === 'Desafio' ? ` Desafio: ${pct(c.raw, 1)}` : ` ${c.dataset.label}: ${pct(c.raw, 1)} · ${FAROL_TXT[st[c.dataIndex]]}` } } } },
     plugins:[labelPlugin, semDadoPlugin] });
+}
+function atgChart(id, rows) {
+  const s = bookSeries(rows), st = s.map(x => !x || x.book === null || x.book === undefined ? 'sem' : x.farol >= 1 ? 'ok' : x.farol >= 0.7 ? 'parcial' : 'falha');
+  atgGen(id, s.map(x => x && x.book), st, s.map(x => x ? x.desf : null), s.map((x, i) => st[i] === 'sem' && (i === 12 || mesEsperado(i))), 'Realizado (Atg. Book)');
+}
+function indAtgChart(id, P13, ref) {
+  const at = P13.map(x => atgPonto(x, ref)), st = P13.map(x => statusPonto(x, ref)), d = ref && C.num(ref.desafio);
+  atgGen(id, at, st, MESES.map(() => d ? 1 + d : null), P13.map((x, i) => x.real === null && x.meta !== null && (i === 12 || mesEsperado(i))), 'Realizado (Atingimento)');
 }
 
 // ---------- páginas ----------
@@ -200,6 +199,7 @@ function renderPainel() {
   const dlt = ac.real === null || ac.meta === null ? null : ac.real - ac.meta, aP = atgPonto(ac, ref);
   kpiDelta($('#kDelta'), dlt, v => `${v > 0 ? '+' : ''}${fmtV(v, ref)} | ${pct(aP, 1)}`, statusPonto(ac, ref), ref && ref.sinal === '↓');
   $$('#atgToggle button').forEach(bt => { bt.classList.toggle('on', bt.dataset.v === S.atgView); bt.onclick = () => { S.atgView = bt.dataset.v; render(); }; });
+  $$('#atgSer button').forEach(bt => { bt.classList.toggle('on', S.atgSer.has(bt.dataset.s)); bt.onclick = () => { S.atgSer.has(bt.dataset.s) ? S.atgSer.delete(bt.dataset.s) : S.atgSer.add(bt.dataset.s); render(); }; });
   $('#atgSub').textContent = S.atgView === 'book' ? '· Book (todos os indicadores)' : (S.selInd ? '· ' + S.selInd : '');
   if (S.atgView === 'book') atgChart('chAtg', b); else indAtgChart('chAtg', [...M12, ac], ref);
 }
@@ -274,7 +274,7 @@ $('#btnRefresh').onclick = () => {
       if (ROWS.some(r => r.ano === keep.ano)) S.ano = keep.ano;
       if (keep.empresa === null || ROWS.some(r => r.empresa === keep.empresa)) S.empresa = keep.empresa;
       S.mes = keep.mes; S.cargos = new Set([...keep.cargos].filter(c => ROWS.some(r => r.cargo === c)));
-      S.resp = keep.resp; S.nivel = keep.nivel; S.indicador = keep.indicador; S.selInd = keep.selInd; S.atgView = keep.atgView;
+      S.resp = keep.resp; S.nivel = keep.nivel; S.indicador = keep.indicador; S.selInd = keep.selInd; S.atgView = keep.atgView; S.atgSer = new Set(keep.atgSer);
       render();
     } catch (err) { alert('Erro ao atualizar: ' + err.message); }
     setTimeout(() => { btn.disabled = false; btn.classList.remove('spin'); }, 450);
