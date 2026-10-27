@@ -204,6 +204,8 @@ function desBars(id, v, vazio, sd) {
 function renderPainel() {
   const sec = $('#tab-painel'); renderSlicers(sec);
   const b = base(), cur = b.filter(r => r.mes === S.mes);
+  { const NM = { Jan:'Janeiro', Fev:'Fevereiro', Mar:'Março', Abr:'Abril', Mai:'Maio', Jun:'Junho', Jul:'Julho', Ago:'Agosto', Set:'Setembro', Out:'Outubro', Nov:'Novembro', Dez:'Dezembro' };
+    $('#bookTitle').textContent = S.mes === 'Acumulado' ? 'Book Acumulado' : 'Book de ' + (NM[S.mes] || S.mes); }
   table($('#tblPainel'), cur);
   const g = new Set(cur.map(r => r.c5 + r.responsavel)).size || 1;
   $('#totBook').textContent = pct(cur.reduce((a, r) => a + r.atgBook3, 0) / g, 1);
