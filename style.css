@@ -41,6 +41,8 @@ table.ind td.c{text-align:center}table.ind tr:nth-child(even) td{background:#faf
 .f{display:inline-block;width:20px;height:20px;border-radius:50%;color:#fff;font-weight:700;line-height:20px;text-align:center;font-size:12px}
 .f.ok{background:var(--green)}.f.falha{background:#c62828}.f.parcial{background:var(--orange)}.f.sem{background:#b9c0c5}
 .neg{color:#c62828}
+/* ∆ e ∆(%): fonte na mesma cor do farol da linha */
+.fc.ok{color:var(--green)}.fc.falha{color:#c62828}.fc.parcial{color:var(--orange)}.fc.sem{color:#b9c0c5}
 .totals{display:flex;justify-content:flex-end;gap:12px;margin:12px 0}.card{border-top:4px solid var(--red);padding:8px 22px;text-align:center;min-width:120px}
 .card b{display:block;font-size:24px;font-weight:700;color:var(--dark)}.card small,.card span{color:var(--grey);font-size:11px;text-transform:uppercase;letter-spacing:1px}
 .charts{display:flex;gap:12px}.chart{padding:10px 12px;margin-bottom:12px;position:relative}

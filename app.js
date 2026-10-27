@@ -90,7 +90,7 @@ function table(el, rows) {
     const f = C.farol(r);
     h += `<tr class="${r.semDado ? 'semdado' : ''}"><td class="l" title="${r.indicador}">${r.indicador}</td>${multi ? `<td class="l">${r.cargo} – ${r.responsavel}</td>` : ''}<td>${r.peso}</td><td class="c">${r.unidade}</td><td class="c">${r.sinal}</td>
       <td>${pct(r.limite)}</td><td>${pct(r.desafio || 0, 1)}</td><td>${fmtV(r.meta, r)}</td><td>${r.semDado ? '<i>sem dados</i>' : fmtV(r.realizado, r)}</td>
-      <td class="${r.delta < 0 ? 'neg' : ''}">${r.semDado ? '—' : fmtV(r.delta, r)}</td><td class="${r.deltaPct < 0 ? 'neg' : ''}">${r.semDado ? '—' : pct(r.deltaPct)}</td>
+      <td class="fc ${f}">${r.semDado ? '—' : fmtV(r.delta, r)}</td><td class="fc ${f}">${r.semDado ? '—' : pct(r.deltaPct)}</td>
       <td>${pct(r.atgInd)}</td><td class="c"><span class="f ${f}" title="${f === 'sem' ? 'sem dados' : pct(r.atgInd)}">${FAROL[f]}</span></td><td>${pct(r.atgBook3)}</td><td>${r.atgDesafio === null ? '' : pct(r.atgDesafio)}</td></tr>`;
   }
   if (!rows.length) h += `<tr><td class="l" colspan="14">Nenhum indicador para os filtros selecionados.</td></tr>`;
