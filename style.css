@@ -163,7 +163,3 @@ footer span:first-of-type{flex:0 1 auto}@media (max-width:900px){.brdesk{display
 .refresh.spin svg{animation:girar .8s linear infinite}@keyframes girar{to{transform:rotate(360deg)}}
 @media (max-width:900px){.updwrap{margin-left:auto;gap:6px}.refresh{width:28px;height:28px}}
 .gdes{fill:#5f6c77}.gauge svg{overflow:visible}.glbl b{white-space:nowrap}
-
-.phead .toggle.ser{margin-left:8px}.toggle.ser button:not(.on){opacity:.45}.sw{display:inline-block;width:14px;height:0;margin-right:6px;vertical-align:middle;border-top:2.5px solid #272e32}.sw.sd{border-top:2px dashed #5f6c77}.sw.sr{height:9px;width:10px;border:0;border-radius:2px;background:#1f9d55}
-@media(max-width:700px){.phead{flex-wrap:wrap;gap:6px}.phead .toggle.ser{margin-left:0}}
-.toggle.ser button.on{background:#fff;color:var(--dark);border-color:#9aa3aa}.toggle.ser button:not(.on){opacity:.45;text-decoration:line-through}
