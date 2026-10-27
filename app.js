@@ -118,11 +118,11 @@ function atgChart(id, rows) {
   // mesmo modelo do Painel: barras na cor do farol, linha Meta 100% grafite tracejada, rótulos, "sem dados"
   const s = bookSeries(rows), st = s.map(x => !x || x.book === null || x.book === undefined ? 'sem' : x.farol >= 1 ? 'ok' : x.farol >= 0.7 ? 'parcial' : 'falha');
   chart(id, { type:'bar', data:{ labels:MESES, datasets:[
-    { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', borderDash:[5, 4], pointRadius:0, borderWidth:1.5 },
+    { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', pointRadius:0, borderWidth:2.5 },
     { label:'Atingimento Book', data:s.map(x => x && x.book), backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46 } ] },
     options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
       scales:{ x:{ ...AX, ticks:{ padding:6, maxRotation:0, autoSkip:false } }, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
-      plugins:{ legend:legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:2, lineDash:[5, 4] }]),
+      plugins:{ legend:legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:3 }]),
         semdado:s.map((x, i) => st[i] === 'sem' && (i === 12 || mesEsperado(i))),
         tooltip:{ padding:10, callbacks:{ label:c => c.dataset.label === 'Meta 100%' ? ' Meta: 100%' : ` ${c.dataset.label}: ${pct(c.raw, 1)} · ${FAROL_TXT[st[c.dataIndex]]}` } } } },
     plugins:[labelPlugin, semDadoPlugin] });
@@ -167,11 +167,11 @@ function indChart(id, M12, ref) {
 function indAtgChart(id, P13, ref) {
   const at = P13.map(x => atgPonto(x, ref)), st = P13.map(x => statusPonto(x, ref));
   chart(id, { type:'bar', data:{ labels:MESES, datasets:[
-    { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', borderDash:[5, 4], pointRadius:0, borderWidth:1.5 },
+    { type:'line', label:'Meta 100%', data:MESES.map(() => 1), borderColor:'#272e32', pointRadius:0, borderWidth:2.5 },
     { label:'Atingimento', data:at, backgroundColor:st.map(k => FAROL_COR[k]), borderRadius:6, borderSkipped:false, maxBarThickness:46 } ] },
     options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18, right:8, left:4 } },
       scales:{ x:{ ...AX, ticks:{ padding:6, maxRotation:0, autoSkip:false } }, y:{ min:0, suggestedMax:1.1, border:{ display:false }, grid:GRID, ticks:{ ...pctTick, padding:8 } } },
-      plugins:{ legend:legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:2, lineDash:[5, 4] }]),
+      plugins:{ legend:legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:3 }]),
         semdado:P13.map((x, i) => x.real === null && x.meta !== null && (i === 12 || mesEsperado(i))),
         tooltip:{ padding:10, callbacks:{ label:c => c.dataset.label === 'Atingimento' ? ` Atingimento: ${pct(c.raw, 1)} · ${FAROL_TXT[st[c.dataIndex]]}` : ' Meta: 100%' } } } },
     plugins:[labelPlugin, semDadoPlugin] });
