@@ -130,6 +130,9 @@ footer{margin-top:auto}
 footer span:first-of-type{flex:1 1 auto;max-width:none}footer span:last-of-type{flex:none;min-width:0;margin-left:auto}
 footer{flex-wrap:nowrap}footer span:first-of-type{min-width:0}footer span:last-of-type{white-space:nowrap;text-align:right}@media (max-width:900px){footer{flex-wrap:wrap}footer span:last-of-type{margin-left:0;text-align:left}}
 footer span:first-of-type{flex:0 1 auto}@media (max-width:900px){.brdesk{display:none}}
+/* rodapé em uma linha (LGPD), altura reduzida; quebra apenas em telas estreitas */
+footer{padding:10px 24px;margin-top:12px;gap:14px;font-size:11px}footer img{height:22px}footer span:first-of-type{white-space:nowrap}
+@media (max-width:1200px){footer span:first-of-type{white-space:normal}}@media (max-width:900px){footer{padding:10px 16px}}
 /* coluna do menu: o fundo grafite termina exatamente na linha vermelha (antes vazava 4px de cinza escuro à direita dela) */
 .app{background:linear-gradient(90deg,#1d2326 calc(var(--side) - 4px),var(--red) calc(var(--side) - 4px),var(--red) var(--side),transparent var(--side))}
 @media (max-width:900px){.app{background:none}}
