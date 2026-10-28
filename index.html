@@ -3,7 +3,7 @@
 <link rel="icon" href="data:,">
 <meta name="theme-color" content="#272e32">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="style.css?v=1793217803">
+<link rel="stylesheet" href="style.css?v=1793218857">
 <script src="lib/xlsx.full.min.js"></script><script src="lib/chart.umd.min.js"></script>
 <script src="calc.js"></script><script src="demo-data.js"></script>
 </head><body>
@@ -14,6 +14,7 @@
     <button data-tab="painel" class="active"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Painel</span></button>
     <button data-tab="ating" class="hidden" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg><span>Atingimento</span></button>
     <button data-tab="print"><svg viewBox="0 0 24 24"><path d="M21.5 2.5L10.5 13.5M21.5 2.5l-7 19-4-8-8-4z"/></svg><span>Resumo</span></button>
+    <button data-tab="comp"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Comparativo</span></button>
   </nav>
   <div class="side-actions">
     <label class="filebtn">📂 Abrir BD BOOK.7.xlsm<input type="file" id="file" accept=".xlsm,.xlsx,.xls" hidden></label>
@@ -59,8 +60,20 @@
   <div class="panel"><h3 class="ptl">Acumulado</h3><div class="kpis"><div class="kpi"><small>Atingimento Book</small><b id="kP2Book">—</b></div><div class="kpi"><small>Atingimento Desafio</small><b id="kP2Desf">—</b></div><div class="kpi"><small>Δ Desafio x Book</small><b id="kP2Delta" class="delta">—</b></div></div><div class="tablewrap inner"><table class="ind" id="tblP2"></table></div></div>
   <div class="panel cons-chart"><h3 class="ptl">Atingimento mensal · Book</h3><div class="chart wide"><canvas id="chMes3"></canvas></div></div>
  </section>
+ <section id="tab-comp" class="tab hidden">
+  <div class="panel filters"><div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl grow"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
+  <div class="slicers"><div class="sl"><h4>NÍVEL</h4><div class="btns" id="cmpNivel"></div></div><div class="sl"><h4>EMPRESA (ranking)</h4><div class="btns" data-sl="empresa"></div></div></div></div>
+  <div class="panel"><h3 class="ptl">Comparativo por nível <small id="cmpSub"></small></h3>
+   <div class="kpis"><div class="kpi"><small>Média do nível (Book)</small><b id="cmpMedia">—</b></div><div class="kpi"><small>Melhor</small><b id="cmpMelhor">—</b><small id="cmpMelhorN" class="kname"></small></div><div class="kpi"><small>Pior</small><b id="cmpPior">—</b><small id="cmpPiorN" class="kname"></small></div><div class="kpi"><small>Pessoas</small><b id="cmpN">—</b> <small id="cmpNsub"></small></div></div></div>
+  <div class="grid2 cmp-grid">
+   <div class="panel"><h3 class="ptl">Ranking na empresa <small id="cmpEmpSub"></small></h3><div class="chart cmp-chart"><canvas id="chCmpEmp"></canvas></div></div>
+   <div class="panel"><h3 class="ptl">Entre empresas <small>· média e mediana do nível</small></h3><div class="chart cmp-chart"><canvas id="chCmpEmps"></canvas></div></div>
+  </div>
+  <div class="panel"><h3 class="ptl">Pessoas do nível</h3><div class="tablewrap inner"><table class="ind cmp" id="tblCmp"></table></div></div>
+ </section>
 </main>
+
 <footer class="no-print"><img src="img/logo-smmetais.png" alt="SM Metais" width="90" height="26"><span>Informações confidenciais e de uso interno, exibidas conforme o perfil de acesso de cada usuário. Dados pessoais tratados em conformidade com a LGPD (Lei nº 13.709/2018).</span><span>© Grupo SM Metais</span></footer>
 </div></div>
-<script src="app.js?v=1793217803"></script>
+<script src="app.js?v=1793218857"></script>
 </body></html>

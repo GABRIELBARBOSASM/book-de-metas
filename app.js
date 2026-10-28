@@ -289,7 +289,76 @@ function renderPrint() {
   kpiBook('kP1', b.filter(r => r.mes === S.mes)); kpiBook('kP2', b.filter(r => r.mes === 'Acumulado'));
   atgChart('chMes3', b);
 }
-function render() { if (!ROWS.length) return; ({ painel:renderPainel, ating:renderAting, print:renderPrint })[curTab()](); }
+// ---------- Comparativo: atingimento entre pessoas do mesmo Nível (dentro da empresa e entre empresas) ----------
+// Pessoa = book Empresa-Cargo-Responsável-Ano; Atg. Book = Σ Atg.Book3, Atg. Desafio = Σ Atg.Book4 (mesma regra dos KPIs do Painel);
+// farol = Atg. Book / (Σ peso/100) (mesma regra do gráfico mensal). Usa só o dataset carregado (a API já filtra por acesso).
+function pessoasNivel(nivel) {
+  const g = new Map();
+  ROWS.filter(r => r.ano === S.ano && r.mes === S.mes && r.nivel === nivel).forEach(r => {
+    const k = r.c5 + '|' + r.responsavel; const o = g.get(k) || { empresa:r.empresa, cargo:r.cargo, pessoa:r.responsavel, b:0, d:0, p:0, temD:false, real:false };
+    o.b += r.atgBook3; o.d += r.atgBook4 || 0; o.p += r.peso; o.temD ||= !!r.desafio; o.real ||= !r.semDado; g.set(k, o); });
+  return [...g.values()].map(o => ({ ...o, book:o.real ? o.b : null, desf:o.real && o.temD ? o.d : null,
+    st:!o.real ? 'sem' : C.farol({ semDado:false, atgInd:o.p ? o.b / (o.p / 100) : 0 }) }));
+}
+const media = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
+const mediana = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const metaVPlugin = { id:'metaV', afterDatasetsDraw(ch) { const x = ch.scales.x, a = ch.chartArea; if (!x) return; const px = x.getPixelForValue(1); if (px < a.left || px > a.right) return;
+  const c = ch.ctx; c.save(); c.strokeStyle = '#272e32'; c.lineWidth = 2; c.beginPath(); c.moveTo(px, a.top); c.lineTo(px, a.bottom); c.stroke(); c.restore(); } };
+const metaHPlugin = { id:'metaH', afterDatasetsDraw(ch) { const y = ch.scales.y, a = ch.chartArea, py = y.getPixelForValue(1); const c = ch.ctx; c.save(); c.strokeStyle = '#272e32'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(a.left, py); c.lineTo(a.right, py); c.stroke(); c.restore(); } };
+const LG_DESF = { text:'Atingimento Desafio', fillStyle:'#5f6c77', strokeStyle:'#5f6c77', pointStyle:'rectRounded', lineWidth:0 };
+function legendaCmp() { const lg = legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:3 }]), g = lg.labels.generateLabels;
+  lg.labels.generateLabels = () => { const l = g(); l.splice(1, 0, LG_DESF); return l; }; return lg; }
+function cmpVazio(id, msg) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } const w = $('#' + id).parentElement; w.querySelector('.cmp-empty')?.remove();
+  if (msg) { const d = document.createElement('div'); d.className = 'cmp-empty'; d.textContent = msg; w.appendChild(d); } $('#' + id).style.display = msg ? 'none' : ''; }
+function renderComp() {
+  const sec = $('#tab-comp'); renderSlicers(sec);
+  const niveis = Object.keys(C.NIVEL_ORD).filter(n => ROWS.some(r => r.ano === S.ano && r.nivel === n));
+  if (!niveis.includes(S.cmpNivel)) S.cmpNivel = niveis.includes(ROWS.find(r => r.ano === S.ano && r.empresa === S.empresa && S.cargos.has(r.cargo))?.nivel) ? ROWS.find(r => r.ano === S.ano && r.empresa === S.empresa && S.cargos.has(r.cargo)).nivel : niveis[0];
+  btnSlicer($('#cmpNivel'), niveis, n => n === S.cmpNivel, n => S.cmpNivel = n);
+  const all = pessoasNivel(S.cmpNivel), com = all.filter(p => p.book !== null), mNivel = media(com.map(p => p.book));
+  $('#cmpSub').textContent = `· ${S.cmpNivel || '—'} · ${S.mes === 'Acumulado' ? 'Acumulado' : 'Mês ' + S.mes} ${S.ano}`;
+  // KPIs
+  const best = com.length ? com.reduce((a, p) => p.book > a.book ? p : a) : null, worst = com.length ? com.reduce((a, p) => p.book < a.book ? p : a) : null;
+  $('#cmpMedia').textContent = pct(mNivel, 1); $('#cmpMelhor').textContent = best ? pct(best.book, 1) : '—'; $('#cmpPior').textContent = worst ? pct(worst.book, 1) : '—';
+  $('#cmpMelhorN').textContent = best ? `${best.pessoa} · ${best.empresa}` : ''; $('#cmpPiorN').textContent = worst ? `${worst.pessoa} · ${worst.empresa}` : '';
+  $('#cmpN').textContent = `${all.length}`; $('#cmpNsub').textContent = all.length - com.length ? `(${all.length - com.length} sem dados)` : '';
+  // (1) ranking na empresa selecionada
+  const emp = all.filter(p => p.empresa === S.empresa).sort((a, b) => (b.book ?? -1) - (a.book ?? -1));
+  $('#cmpEmpSub').textContent = `· ${S.empresa || '—'}`;
+  const opt = (extra) => ({ indexAxis:'y', maintainAspectRatio:false, animation:false, layout:{ padding:{ right:46 } },
+    scales:{ x:{ min:0, suggestedMax:1.15, ticks:pctTick }, y:{ ticks:{ autoSkip:false } } }, plugins:{ legend:legendaCmp(), ...extra } });
+  if (!emp.length) cmpVazio('chCmpEmp', `Nenhuma pessoa do nível ${S.cmpNivel} em ${S.empresa || 'empresa selecionada'} no período.`);
+  else { cmpVazio('chCmpEmp'); $('#chCmpEmp').parentElement.style.height = Math.max(170, 70 + emp.length * 46) + 'px';
+    chart('chCmpEmp', { type:'bar', data:{ labels:emp.map(p => p.book === null ? `${p.pessoa} (sem dados)` : p.pessoa), datasets:[
+      { label:'Atingimento Book', data:emp.map(p => p.book), backgroundColor:emp.map(p => FAROL_COR[p.st]), borderRadius:6, borderSkipped:false, maxBarThickness:18 },
+      { label:'Atingimento Desafio', data:emp.map(p => p.desf), backgroundColor:'#5f6c77', borderRadius:6, borderSkipped:false, maxBarThickness:18 } ] },
+      options:opt({ tooltip:{ callbacks:{ title:c => `${emp[c[0].dataIndex].pessoa} · ${emp[c[0].dataIndex].cargo}`, label:c => ` ${c.dataset.label}: ${c.raw === null ? (c.datasetIndex ? 'sem desafio' : 'sem dados') : pct(c.raw, 1)}${c.datasetIndex ? '' : ' · ' + FAROL_TXT[emp[c.dataIndex].st]}` } } }),
+      plugins:[labelPlugin, metaVPlugin] }); }
+  // (2) entre empresas: média e mediana do nível + nº de pessoas
+  const emps = uniq(all.map(p => p.empresa)).map(e => { const ps = all.filter(p => p.empresa === e), v = ps.filter(p => p.book !== null).map(p => p.book), m = media(v);
+    return { e, n:ps.length, med:m, mdn:mediana(v), st:m === null ? 'sem' : m >= 1 ? 'ok' : m > 0 ? 'parcial' : 'falha' }; }).sort((a, b) => (b.med ?? -1) - (a.med ?? -1));
+  if (!emps.length) cmpVazio('chCmpEmps', 'Sem dados do nível no período.');
+  else { cmpVazio('chCmpEmps');
+    chart('chCmpEmps', { type:'bar', data:{ labels:emps.map(x => `${x.e} (${x.n} ${x.n === 1 ? 'pessoa' : 'pessoas'})`), datasets:[
+      { label:'Média', data:emps.map(x => x.med), backgroundColor:emps.map(x => FAROL_COR[x.st]), borderRadius:6, borderSkipped:false, maxBarThickness:46 },
+      { label:'Mediana', data:emps.map(x => x.mdn), backgroundColor:'#8a959e', borderRadius:6, borderSkipped:false, maxBarThickness:46 } ] },
+      options:{ maintainAspectRatio:false, animation:false, layout:{ padding:{ top:18 } }, scales:{ x:{ ...AX, ticks:{ maxRotation:0, autoSkip:false } }, y:{ min:0, suggestedMax:1.1, ticks:{ ...pctTick, padding:8 } } },
+        plugins:{ legend:(() => { const lg = legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:3 }]), g = lg.labels.generateLabels;
+          lg.labels.generateLabels = () => { const l = g(); l.splice(1, 0, { text:'Mediana', fillStyle:'#8a959e', strokeStyle:'#8a959e', pointStyle:'rectRounded', lineWidth:0 }); return l; }; return lg; })(),
+          semdado:emps.map(x => x.med === null), tooltip:{ callbacks:{ label:c => c.dataset.label === 'Meta 100%' ? ' Meta: 100%' : ` ${c.dataset.label}: ${c.raw === null ? 'sem dados' : pct(c.raw, 1)}` } } } },
+      plugins:[labelPlugin, semDadoPlugin, metaHPlugin] }); }
+  // (3) tabela
+  const rk = [...all].sort((a, b) => (b.book ?? -1) - (a.book ?? -1));
+  let h = '<tr><th>Pos.</th><th>Pessoa</th><th>Empresa</th><th>Cargo</th><th>Atg. Book</th><th>Atg. Desafio</th><th>∆ vs média do nível</th><th>Farol</th></tr>';
+  rk.forEach((p, i) => { const dv = p.book === null || mNivel === null ? null : p.book - mNivel;
+    h += `<tr class="${p.book === null ? 'semdado' : ''}"><td class="c">${p.book === null ? '—' : i + 1 + 'º'}</td><td class="l">${p.pessoa}</td><td class="l">${p.empresa}</td><td class="l">${p.cargo}</td>
+      <td>${p.book === null ? '<i>sem dados</i>' : pct(p.book, 1)}</td><td>${p.desf === null ? (p.book === null ? '—' : '<span class="muted">sem desafio</span>') : pct(p.desf, 1)}</td>
+      <td class="fc ${p.st}">${dv === null ? '—' : (dv > 0 ? '+' : '') + nf(1).format(dv * 100) + ' p.p.'}</td><td class="c"><span class="f ${p.st}" title="${FAROL_TXT[p.st]}">${FAROL[p.st]}</span></td></tr>`; });
+  if (!rk.length) h += '<tr><td class="l" colspan="8">Nenhuma pessoa deste nível no período selecionado.</td></tr>';
+  else if (rk.length === 1) h += '<tr><td class="l muted" colspan="8">Apenas 1 pessoa visível neste nível — a comparação aparece quando houver mais pessoas no seu perfil de acesso.</td></tr>';
+  $('#tblCmp').innerHTML = h;
+}
+function render() { if (!ROWS.length) return; ({ painel:renderPainel, ating:renderAting, print:renderPrint, comp:renderComp })[curTab()](); }
 if (location.hash === '#demo' || !window.REAL_DATA) $('#demo').click();
 else if (window.REAL_DATA) (LAST_SRC = { kind:'real' }, loadAoa(REAL_DATA.meta, REAL_DATA.realizado, false, REAL_DATA.mtime));
 
