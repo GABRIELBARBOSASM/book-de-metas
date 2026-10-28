@@ -314,8 +314,12 @@ function renderComp() {
   const sec = $('#tab-comp'); renderSlicers(sec);
   const niveis = Object.keys(C.NIVEL_ORD).filter(n => ROWS.some(r => r.ano === S.ano && r.nivel === n));
   if (!niveis.includes(S.cmpNivel)) S.cmpNivel = niveis.includes(ROWS.find(r => r.ano === S.ano && r.empresa === S.empresa && S.cargos.has(r.cargo))?.nivel) ? ROWS.find(r => r.ano === S.ano && r.empresa === S.empresa && S.cargos.has(r.cargo)).nivel : niveis[0];
-  btnSlicer($('#cmpNivel'), niveis, n => n === S.cmpNivel, n => S.cmpNivel = n);
-  const all = pessoasNivel(S.cmpNivel), com = all.filter(p => p.book !== null), mNivel = media(com.map(p => p.book));
+  btnSlicer($('#cmpNivel'), niveis, n => n === S.cmpNivel, n => { S.cmpNivel = n; S.cmpEmps = null; });
+  const empsVis = uniq(ROWS.filter(r => r.ano === S.ano && r.nivel === S.cmpNivel).map(r => r.empresa));
+  if (!S.cmpEmps) S.cmpEmps = new Set(empsVis);
+  const selAll = empsVis.every(e => S.cmpEmps.has(e));
+  btnSlicer($('#cmpEmp'), ['Todas', ...empsVis], e => e === 'Todas' ? selAll : S.cmpEmps.has(e), e => { if (e === 'Todas') S.cmpEmps = selAll ? new Set() : new Set(empsVis); else S.cmpEmps.has(e) ? S.cmpEmps.delete(e) : S.cmpEmps.add(e); });
+  const all = pessoasNivel(S.cmpNivel).filter(p => S.cmpEmps.has(p.empresa)), com = all.filter(p => p.book !== null), mNivel = media(com.map(p => p.book));
   $('#cmpSub').textContent = `· ${S.cmpNivel || '—'} · ${S.mes === 'Acumulado' ? 'Acumulado' : 'Mês ' + S.mes} ${S.ano}`;
   // KPIs
   const best = com.length ? com.reduce((a, p) => p.book > a.book ? p : a) : null, worst = com.length ? com.reduce((a, p) => p.book < a.book ? p : a) : null;
@@ -323,13 +327,13 @@ function renderComp() {
   $('#cmpMelhorN').textContent = best ? `${best.pessoa} · ${best.empresa}` : ''; $('#cmpPiorN').textContent = worst ? `${worst.pessoa} · ${worst.empresa}` : '';
   $('#cmpN').textContent = `${all.length}`; $('#cmpNsub').textContent = all.length - com.length ? `(${all.length - com.length} sem dados)` : '';
   // (1) ranking na empresa selecionada
-  const emp = all.filter(p => p.empresa === S.empresa).sort((a, b) => (b.book ?? -1) - (a.book ?? -1));
-  $('#cmpEmpSub').textContent = `· ${S.empresa || '—'}`;
+  const emp = [...all].sort((a, b) => (b.book ?? -1) - (a.book ?? -1));
+  $('#cmpEmpSub').textContent = `· ${selAll ? 'todas as empresas' : [...S.cmpEmps].sort().join(', ') || 'nenhuma empresa'}`;
   const opt = (extra) => ({ indexAxis:'y', maintainAspectRatio:false, animation:false, layout:{ padding:{ right:46 } },
     scales:{ x:{ min:0, suggestedMax:1.15, ticks:pctTick }, y:{ ticks:{ autoSkip:false } } }, plugins:{ legend:legendaCmp(), ...extra } });
-  if (!emp.length) cmpVazio('chCmpEmp', `Nenhuma pessoa do nível ${S.cmpNivel} em ${S.empresa || 'empresa selecionada'} no período.`);
+  if (!emp.length) cmpVazio('chCmpEmp', S.cmpEmps.size ? `Nenhuma pessoa do nível ${S.cmpNivel} nas empresas selecionadas no período.` : 'Selecione ao menos uma empresa.');
   else { cmpVazio('chCmpEmp'); $('#chCmpEmp').parentElement.style.height = Math.max(170, 70 + emp.length * 46) + 'px';
-    chart('chCmpEmp', { type:'bar', data:{ labels:emp.map(p => p.book === null ? `${p.pessoa} (sem dados)` : p.pessoa), datasets:[
+    chart('chCmpEmp', { type:'bar', data:{ labels:emp.map(p => `${p.pessoa} · ${p.empresa}${p.book === null ? ' (sem dados)' : ''}`), datasets:[
       { label:'Atingimento Book', data:emp.map(p => p.book), backgroundColor:emp.map(p => FAROL_COR[p.st]), borderRadius:6, borderSkipped:false, maxBarThickness:18 },
       { label:'Atingimento Desafio', data:emp.map(p => p.desf), backgroundColor:'#5f6c77', borderRadius:6, borderSkipped:false, maxBarThickness:18 } ] },
       options:opt({ tooltip:{ callbacks:{ title:c => `${emp[c[0].dataIndex].pessoa} · ${emp[c[0].dataIndex].cargo}`, label:c => ` ${c.dataset.label}: ${c.raw === null ? (c.datasetIndex ? 'sem desafio' : 'sem dados') : pct(c.raw, 1)}${c.datasetIndex ? '' : ' · ' + FAROL_TXT[emp[c.dataIndex].st]}` } } }),
