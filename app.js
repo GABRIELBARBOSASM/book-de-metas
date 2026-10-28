@@ -325,3 +325,6 @@ function stickyLayout() {
 addEventListener('scroll', stickyLayout, { passive:true }); addEventListener('resize', stickyLayout);
 { const r0 = render; render = function () { r0.apply(this, arguments); stickyLayout(); }; }
 setTimeout(stickyLayout, 0);
+
+// sincroniza a altura da base da sidebar com o rodapé (inclui quebra em 2 linhas)
+(() => { const f = document.querySelector('footer'); if (!f) return; const set = () => document.documentElement.style.setProperty('--foot-h', f.getBoundingClientRect().height + 'px'); set(); if (window.ResizeObserver) new ResizeObserver(set).observe(f); window.addEventListener('resize', set); })();
