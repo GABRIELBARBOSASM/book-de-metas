@@ -91,7 +91,7 @@ function table(el, rows) {
     h += `<tr class="${r.semDado ? 'semdado' : ''}"><td class="l" title="${r.indicador}">${r.indicador}</td>${multi ? `<td class="l">${r.cargo} – ${r.responsavel}</td>` : ''}<td>${r.peso}</td><td class="c">${r.unidade}</td><td class="c">${r.sinal}</td>
       <td>${pct(r.limite)}</td><td>${pct(r.desafio || 0, 1)}</td><td>${fmtV(r.meta, r)}</td><td>${r.semDado ? '<i>sem dados</i>' : fmtV(r.realizado, r)}</td>
       <td class="fc ${f}">${r.semDado ? '—' : fmtV(r.delta, r)}</td><td class="fc ${f}">${r.semDado ? '—' : pct(r.deltaPct)}</td>
-      <td>${pct(r.atgInd)}</td><td class="c"><span class="f ${f}" title="${f === 'sem' ? 'sem dados' : pct(r.atgInd)}">${FAROL[f]}</span></td><td>${pct(r.atgBook3)}</td><td>${r.atgDesafio === null ? '' : pct(r.atgDesafio)}</td></tr>`;
+      <td>${pct(r.atgInd)}</td><td class="c"><span class="f ${f}" title="${f === 'sem' ? 'sem dados' : pct(r.atgInd)}">${FAROL[f]}</span></td><td>${pct(r.atgBook3)}</td><td>${r.atgDesafio === null ? (C.num(r.desafio) ? '' : '<span class="muted sd">Sem desafio</span>') : pct(r.atgDesafio)}</td></tr>`;
   }
   if (!rows.length) h += `<tr><td class="l" colspan="14">Nenhum indicador para os filtros selecionados.</td></tr>`;
   el.innerHTML = h;
@@ -100,10 +100,11 @@ function table(el, rows) {
 function bookSeries(rows) {
   const out = MESES.map((m, i) => {
     const mr = rows.filter(r => r.mesOrd === i + 1); const g = new Map();
-    mr.forEach(r => { const k = r.c5 + r.responsavel; const o = g.get(k) || { b:0, d:0, p:0, real:false }; o.b += r.atgBook3; o.d += r.atgBook4; o.p += r.peso; o.real ||= !r.semDado; g.set(k, o); });
+    mr.forEach(r => { const k = r.c5 + r.responsavel; const o = g.get(k) || { b:0, d:0, p:0, pd:0, real:false }; o.b += r.atgBook3; o.d += r.atgBook4; o.p += r.peso; o.pd += r.pesoDesafio || 0; o.real ||= !r.semDado; g.set(k, o); });
     const gs = [...g.values()]; if (!gs.length || !gs.some(x => x.real)) return null;
     const avg = f => gs.reduce((a, x) => a + f(x), 0) / gs.length;
-    return { book: avg(x => x.b), desf: avg(x => x.d), farol: avg(x => x.p ? x.b / (x.p / 100) : 0) };
+    const gd = gs.filter(x => x.pd > 0);
+    return { book: avg(x => x.b), desf: gd.length ? gd.reduce((a, x) => a + x.d, 0) / gd.length : null, farol: avg(x => x.p ? x.b / (x.p / 100) : 0) };
   });
   // oculta meses futuros (após o mês anterior ao atual) no ano corrente, como "Atg. Book (Gráfico)"
   if (S.ano === String(new Date().getFullYear())) for (let i = LIM; i < 12; i++) out[i] = null;
@@ -129,7 +130,7 @@ function atgChart(id, rows) {
 }
 const labelPlugin = { id:'lbl', afterDatasetsDraw(ch) { const ctx = ch.ctx; ctx.save(); ctx.font = "600 11px 'Poppins', Arial, sans-serif"; ctx.fillStyle = '#3e3e3e'; ctx.textAlign = 'center';
   ch.data.datasets.forEach((ds, di) => { if (ds.type === 'line' || ch.options.indexAxis === 'y') return; ch.getDatasetMeta(di).data.forEach((el, i) => { const v = ds.data[i]; if (v === null || v === undefined || (el.width && el.width < 30)) return; { const t = ds.fmt ? ds.fmt(v) : pct(v, 1); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.strokeText(t, el.x, el.y - 5); ctx.fillText(t, el.x, el.y - 5); } }); });
-  if (ch.options.indexAxis === 'y') { ctx.textAlign = 'left'; ch.data.datasets.forEach((ds, di) => ch.getDatasetMeta(di).data.forEach((el, i) => ctx.fillText(pct(ds.data[i], 1), el.x + 4, el.y + 4))); }
+  if (ch.options.indexAxis === 'y') { ctx.textAlign = 'left'; ch.data.datasets.forEach((ds, di) => ch.getDatasetMeta(di).data.forEach((el, i) => { if (ds.data[i] === null || ds.data[i] === undefined) return; ctx.fillText(pct(ds.data[i], 1), el.x + 4, el.y + 4); })); }
   ctx.restore(); } };
 
 // ---------- gráficos do indicador (cores = farol do calc.js, considerando ↑/↓ e Limite) ----------
@@ -183,7 +184,7 @@ function indAtgChart(id, P13, ref) {
     plugins:[labelPlugin, semDadoPlugin] });
 }
 
-function desChart(id, rows) { const s = bookSeries(rows); desBars(id, s.map(x => x ? x.desf : null)); }
+function desChart(id, rows) { const s = bookSeries(rows); desBars(id, s.map(x => x ? x.desf : null), rows.length && !rows.some(r => r.pesoDesafio > 0) ? 'Sem desafio' : null); }
 // Desafio de UM indicador (selInd): mesmas regras do calc.js (C.atgDesafio, respeita ↑/↓; Realizado em branco = sem dados)
 function desIndChart(id, P13, ref) {
   const d = ref && C.num(ref.desafio);
@@ -215,7 +216,7 @@ function renderPainel() {
   table($('#tblPainel'), cur);
   const g = new Set(cur.map(r => r.c5 + r.responsavel)).size || 1;
   $('#totBook').textContent = pct(cur.reduce((a, r) => a + r.atgBook3, 0) / g, 1);
-  $('#totDesf').textContent = pct(cur.reduce((a, r) => a + r.atgBook4, 0) / g, 1);
+  $('#totDesf').textContent = cur.length ? pctDesf(desfAvg(cur)) : '—';
   const inds = uniq(b.map(r => r.indicador)); if (!inds.includes(S.selInd)) S.selInd = [...b].sort((x, y) => y.peso - x.peso)[0]?.indicador || null;
   const si = $('#selInd'); si.innerHTML = inds.map(i => `<option ${i === S.selInd ? 'selected' : ''}>${i}</option>`).join(''); si.onchange = () => { S.selInd = si.value; render(); };
   const ir = b.filter(r => r.indicador === S.selInd);
@@ -225,8 +226,8 @@ function renderPainel() {
   const ac = byM('Acumulado'), mx = Math.max(ac.real || 0, ac.meta || 0) * 1.1 || 1;
   gauge($('#gauge'), ac, ref);
   // cabeçalho de KPIs (estilo ACT / PLAN / Δ)
-  const tb = cur.reduce((s, r) => s + r.atgBook3, 0) / g, td = cur.reduce((s, r) => s + r.atgBook4, 0) / g;
-  kpiDelta($('#kDeltaBook'), cur.length ? td - tb : null, v => (v > 0 ? '+' : '') + nf(1).format(v * 100) + ' p.p.', null);
+  const tb = cur.reduce((s, r) => s + r.atgBook3, 0) / g, td = desfAvg(cur);
+  kpiDelta($('#kDeltaBook'), cur.length && td !== null ? td - tb : null, v => (v > 0 ? '+' : '') + nf(1).format(v * 100) + ' p.p.', null);
   $('#kReal').textContent = ac.real === null ? 'sem dados' : fmtV(ac.real, ref); $('#kMeta').textContent = ac.meta === null ? '—' : fmtV(ac.meta, ref);
   const dlt = ac.real === null || ac.meta === null ? null : ac.real - ac.meta, aP = atgPonto(ac, ref);
   kpiDelta($('#kDelta'), dlt, v => `${v > 0 ? '+' : ''}${fmtV(v, ref)} | ${pct(aP, 1)}`, statusPonto(ac, ref), ref && ref.sinal === '↓');
@@ -259,10 +260,14 @@ function gauge(el, ac, ref) {
     <div class="glbl${dv !== null ? ' g4' : ''}">${dv !== null ? `<div><small>Desafio</small><b>${fmtV(dv, ref)}</b></div><div><small>Atingimento Desafio</small><b style="color:${adCor}">${ad === null ? '—' : pct(ad, 1)}</b></div>` : ''}<div><small>Meta</small><b>${ac.meta === null ? '—' : fmtV(ac.meta, ref)}</b></div><div><small>Atingimento</small><b style="color:${at === null ? '#8a959e' : cor}">${at === null ? '—' : pct(at, 1)}</b></div></div>`;
 }
 // KPIs Atingimento Book / Desafio / Δ (mesma regra do Painel) para um conjunto de linhas
+// Atingimento Desafio: média só dos books COM desafio (Σ pesoDesafio > 0); nenhum → null ("Sem desafio")
+function desfAvg(rows) { const g = new Map(); rows.forEach(r => { const k = r.c5 + r.responsavel; const o = g.get(k) || { d:0, pd:0 }; o.d += r.atgBook4 || 0; o.pd += r.pesoDesafio || 0; g.set(k, o); });
+  const c = [...g.values()].filter(o => o.pd > 0); return c.length ? c.reduce((a, o) => a + o.d, 0) / c.length : null; }
+const pctDesf = v => v === null ? 'Sem desafio' : pct(v, 1);
 function kpiBook(p, rows) { const g = new Set(rows.map(r => r.c5 + r.responsavel)).size || 1;
-  const tb = rows.reduce((s, r) => s + r.atgBook3, 0) / g, td = rows.reduce((s, r) => s + r.atgBook4, 0) / g;
-  $('#' + p + 'Book').textContent = pct(tb, 1); $('#' + p + 'Desf').textContent = pct(td, 1);
-  kpiDelta($('#' + p + 'Delta'), rows.length ? td - tb : null, v => (v > 0 ? '+' : '') + nf(1).format(v * 100) + ' p.p.', null); }
+  const tb = rows.reduce((s, r) => s + r.atgBook3, 0) / g, td = desfAvg(rows);
+  $('#' + p + 'Book').textContent = pct(tb, 1); $('#' + p + 'Desf').textContent = rows.length ? pctDesf(td) : '—';
+  kpiDelta($('#' + p + 'Delta'), rows.length && td !== null ? td - tb : null, v => (v > 0 ? '+' : '') + nf(1).format(v * 100) + ' p.p.', null); }
 // Δ com seta: cor pelo farol (ou sinal, quando não há farol)
 function kpiDelta(el, v, fmt, st, menorMelhor) {
   if (v === null || v === undefined || isNaN(v)) { el.textContent = '—'; el.style.color = '#8a959e'; return; }
@@ -296,7 +301,7 @@ function pessoasNivel(nivel) {
   const g = new Map();
   ROWS.filter(r => r.ano === S.ano && r.mes === S.mes && r.nivel === nivel).forEach(r => {
     const k = r.c5 + '|' + r.responsavel; const o = g.get(k) || { empresa:r.empresa, cargo:r.cargo, pessoa:r.responsavel, b:0, d:0, p:0, temD:false, real:false };
-    o.b += r.atgBook3; o.d += r.atgBook4 || 0; o.p += r.peso; o.temD ||= !!r.desafio; o.real ||= !r.semDado; g.set(k, o); });
+    o.b += r.atgBook3; o.d += r.atgBook4 || 0; o.p += r.peso; o.temD ||= (r.pesoDesafio || 0) > 0; o.real ||= !r.semDado; g.set(k, o); });
   return [...g.values()].map(o => ({ ...o, book:o.real ? o.b : null, desf:o.real && o.temD ? o.d : null,
     st:!o.real ? 'sem' : C.farol({ semDado:false, atgInd:o.p ? o.b / (o.p / 100) : 0 }) }));
 }
@@ -305,6 +310,9 @@ const mediana = a => { if (!a.length) return null; const s = [...a].sort((x, y) 
 const metaVPlugin = { id:'metaV', afterDatasetsDraw(ch) { const x = ch.scales.x, a = ch.chartArea; if (!x) return; const px = x.getPixelForValue(1); if (px < a.left || px > a.right) return;
   const c = ch.ctx; c.save(); c.strokeStyle = '#272e32'; c.lineWidth = 2; c.beginPath(); c.moveTo(px, a.top); c.lineTo(px, a.bottom); c.stroke(); c.restore(); } };
 const metaHPlugin = { id:'metaH', afterDatasetsDraw(ch) { const y = ch.scales.y, a = ch.chartArea, py = y.getPixelForValue(1); const c = ch.ctx; c.save(); c.strokeStyle = '#272e32'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(a.left, py); c.lineTo(a.right, py); c.stroke(); c.restore(); } };
+// rótulo "Sem desafio" no lugar da barra cinza (pessoa sem desafio)
+const semDesfPlugin = { id:'semDesf', afterDatasetsDraw(ch) { const ds = ch.data.datasets[1], m0 = ch.getDatasetMeta(0), c = ch.ctx; if (!ds) return; c.save(); c.font = "italic 500 10.5px 'Poppins', Arial, sans-serif"; c.fillStyle = '#8a959e'; c.textAlign = 'left';
+  ds.data.forEach((v, i) => { const e = m0.data[i]; if (v === null && ch.data.datasets[0].data[i] !== null && e) c.fillText('Sem desafio', ch.chartArea.left + 4, e.y + 16); }); c.restore(); } };
 const LG_DESF = { text:'Atingimento Desafio', fillStyle:'#5f6c77', strokeStyle:'#5f6c77', pointStyle:'rectRounded', lineWidth:0 };
 function legendaCmp() { const lg = legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:3 }]), g = lg.labels.generateLabels;
   lg.labels.generateLabels = () => { const l = g(); l.splice(1, 0, LG_DESF); return l; }; return lg; }
@@ -336,8 +344,8 @@ function renderComp() {
     chart('chCmpEmp', { type:'bar', data:{ labels:emp.map(p => `${p.pessoa} · ${p.empresa}${p.book === null ? ' (sem dados)' : ''}`), datasets:[
       { label:'Atingimento Book', data:emp.map(p => p.book), backgroundColor:emp.map(p => FAROL_COR[p.st]), borderRadius:6, borderSkipped:false, maxBarThickness:18 },
       { label:'Atingimento Desafio', data:emp.map(p => p.desf), backgroundColor:'#5f6c77', borderRadius:6, borderSkipped:false, maxBarThickness:18 } ] },
-      options:opt({ tooltip:{ callbacks:{ title:c => `${emp[c[0].dataIndex].pessoa} · ${emp[c[0].dataIndex].cargo}`, label:c => ` ${c.dataset.label}: ${c.raw === null ? (c.datasetIndex ? 'sem desafio' : 'sem dados') : pct(c.raw, 1)}${c.datasetIndex ? '' : ' · ' + FAROL_TXT[emp[c.dataIndex].st]}` } } }),
-      plugins:[labelPlugin, metaVPlugin] }); }
+      options:opt({ tooltip:{ callbacks:{ title:c => `${emp[c[0].dataIndex].pessoa} · ${emp[c[0].dataIndex].cargo}`, label:c => ` ${c.dataset.label}: ${c.raw === null ? (c.datasetIndex ? 'Sem desafio' : 'sem dados') : pct(c.raw, 1)}${c.datasetIndex ? '' : ' · ' + FAROL_TXT[emp[c.dataIndex].st]}` } } }),
+      plugins:[labelPlugin, metaVPlugin, semDesfPlugin] }); }
   // (2) entre empresas: média e mediana do nível + nº de pessoas
   const emps = uniq(all.map(p => p.empresa)).map(e => { const ps = all.filter(p => p.empresa === e), v = ps.filter(p => p.book !== null).map(p => p.book), m = media(v);
     return { e, n:ps.length, med:m, mdn:mediana(v), st:m === null ? 'sem' : m >= 1 ? 'ok' : m > 0 ? 'parcial' : 'falha' }; }).sort((a, b) => (b.med ?? -1) - (a.med ?? -1));
@@ -356,7 +364,7 @@ function renderComp() {
   let h = '<tr><th>Pos.</th><th>Pessoa</th><th>Empresa</th><th>Cargo</th><th>Atg. Book</th><th>Atg. Desafio</th><th>∆ vs média do nível</th><th>Farol</th></tr>';
   rk.forEach((p, i) => { const dv = p.book === null || mNivel === null ? null : p.book - mNivel;
     h += `<tr class="${p.book === null ? 'semdado' : ''}"><td class="c">${p.book === null ? '—' : i + 1 + 'º'}</td><td class="l">${p.pessoa}</td><td class="l">${p.empresa}</td><td class="l">${p.cargo}</td>
-      <td>${p.book === null ? '<i>sem dados</i>' : pct(p.book, 1)}</td><td>${p.desf === null ? (p.book === null ? '—' : '<span class="muted">sem desafio</span>') : pct(p.desf, 1)}</td>
+      <td>${p.book === null ? '<i>sem dados</i>' : pct(p.book, 1)}</td><td>${p.desf === null ? (p.book === null ? '—' : '<span class="muted">Sem desafio</span>') : pct(p.desf, 1)}</td>
       <td class="fc ${p.st}">${dv === null ? '—' : (dv > 0 ? '+' : '') + nf(1).format(dv * 100) + ' p.p.'}</td><td class="c"><span class="f ${p.st}" title="${FAROL_TXT[p.st]}">${FAROL[p.st]}</span></td></tr>`; });
   if (!rk.length) h += '<tr><td class="l" colspan="8">Nenhuma pessoa deste nível no período selecionado.</td></tr>';
   else if (rk.length === 1) h += '<tr><td class="l muted" colspan="8">Apenas 1 pessoa visível neste nível — a comparação aparece quando houver mais pessoas no seu perfil de acesso.</td></tr>';
