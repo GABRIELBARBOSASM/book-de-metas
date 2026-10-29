@@ -197,3 +197,6 @@ body.nostick .tab>.panel.filters{position:static}
 .plr-res{background:#272e32}.plr-res small,.plr-res em{color:#c9d0d5}.plr-res b{color:#fff}.plr-op{align-self:center;font:600 22px var(--head);color:var(--grey)}
 #tblEmp tr.plr-re td{background:#fbf3e6}#tblEmp tr.tot td{border-top:2px solid #272e32;font-weight:600}.plr-note{margin:8px 0 0;font-size:10.5px;color:var(--grey)}
 @media(max-width:700px){.plr-op{display:none}.plr-c{flex-basis:45%}}
+/* 29/10: linha cinza do logo alinhada à linha vermelha do cabeçalho (altura = --top-h medida via JS); menu lateral 20px mais estreito */
+:root{--side:208px}
+@media (min-width:901px){.side .brand{box-sizing:border-box;height:var(--top-h,63px);padding:0 16px;display:flex;align-items:center;justify-content:center;flex:none}.side .brand img{height:36px}}
