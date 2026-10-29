@@ -52,12 +52,13 @@ window.addEventListener('afterprint', () => { const c = charts.chMes3; if (!c) r
 // ---------- filtros ----------
 const curTab = () => $$('.tabs button.active')[0].dataset.tab;
 const fAno = r => r.ano === S.ano, fEmp = r => !S.empresa || r.empresa === S.empresa;
-const fCargo = r => !S.cargos.size || S.cargos.has(r.cargo), fResp = r => S.resp === 'Todos' || r.responsavel === S.resp;
+const fCargo = r => !S.cargos.size || S.cargos.has(r.cargo), fResp = r => S.resp === 'Todos' || (S.resp instanceof Set ? S.resp.has(r.responsavel) : r.responsavel === S.resp);
 const fNivel = r => !S.niveis || S.niveis.has(r.nivel), fIndic = r => S.indicador === 'Todos' || r.indicador === S.indicador;
 function base() { const t = curTab(); return ROWS.filter(r => fAno(r) && fEmp(r) && fCargo(r) && (t === 'ating' ? fNivel(r) && fIndic(r) : fResp(r))); }
 const uniq = a => [...new Set(a)].sort((x, y) => x.localeCompare(y, 'pt-BR'));
 
 // lista suspensa com caixas de seleção (multisseleção); continua aberta ao marcar, fecha ao clicar fora
+const MD_NONE = '\u0000nenhum', mdLabel = (all, sel) => all ? 'Todos' : !sel.length ? 'Nenhum' : sel.length === 1 ? sel[0] : `${sel.length} selecionados`;
 function multiDrop(el, items, label, isOn, onClick) { const sc = el.querySelector('.md-list')?.scrollTop || 0; el.innerHTML = ''; el.classList.add('mdrop'); el.classList.toggle('open', S.mdOpen === el.id);
   const b = document.createElement('button'); b.type = 'button'; b.className = 'md-btn'; b.textContent = label; b.onclick = () => { S.mdOpen = S.mdOpen === el.id ? null : el.id; el.classList.toggle('open', S.mdOpen === el.id); }; el.appendChild(b);
   const l = document.createElement('div'); l.className = 'md-list'; items.forEach((it, i) => { const lb = document.createElement('label'); lb.className = i ? '' : 'md-all'; const c = document.createElement('input'); c.type = 'checkbox'; c.checked = isOn(it);
@@ -82,8 +83,14 @@ function renderSlicers(sec) {
       if (S.empresa && !es.includes(S.empresa)) S.empresa = es[0] || null;
       // 'Todas' seleciona todas as empresas (S.empresa = null); clicar de novo volta para a última empresa escolhida
       btnSlicer(el, ['Todas', ...es], e => e === 'Todas' ? !S.empresa : e === S.empresa, e => { if (e === 'Todas') S.empresa = S.empresa ? (S.empLast = S.empresa, null) : (es.includes(S.empLast) ? S.empLast : es[0]); else { S.empresa = (S.empresa === e && curTab() === 'ating') ? null : e; if (S.empresa) S.empLast = S.empresa; } S.cargos = new Set(); S.resp = 'Todos'; }); }
-    if (k === 'cargo') selSlicer(el, uniq(scope.filter(fNivel).map(r => r.cargo)), S.cargos.size === 1 ? [...S.cargos][0] : 'Todos', v => { S.cargos = v === 'Todos' ? new Set() : new Set([v]); S.resp = 'Todos'; });
-    if (k === 'resp') selSlicer(el, uniq(scope.filter(fCargo).map(r => r.responsavel)), S.resp, v => S.resp = v);
+    // Cargo/Responsável: lista suspensa multisseleção ('Todos' no topo). Cargo: Set vazio = todos; Responsável: 'Todos' ou Set.
+    // Vários marcados = união das linhas (mesma regra de 'Todos': tabelas com coluna Responsável, KPIs/gráficos somam os books marcados).
+    if (k === 'cargo') { el.id ||= 'md-cargo-' + sec.id; const cs = uniq(scope.filter(fNivel).map(r => r.cargo)), all = !S.cargos.size;
+      multiDrop(el, ['Todos', ...cs], mdLabel(all, [...S.cargos].filter(c => cs.includes(c))), c => c === 'Todos' ? all : all || S.cargos.has(c), c => {
+        if (c === 'Todos') S.cargos = all ? new Set([MD_NONE]) : new Set(); else { const s = all ? new Set(cs) : new Set([...S.cargos].filter(x => x !== MD_NONE)); s.has(c) ? s.delete(c) : s.add(c); S.cargos = cs.every(x => s.has(x)) ? new Set() : s.size ? s : new Set([MD_NONE]); } S.resp = 'Todos'; }); }
+    if (k === 'resp') { el.id ||= 'md-resp-' + sec.id; const rs = uniq(scope.filter(fCargo).map(r => r.responsavel)), all = S.resp === 'Todos', sel = all ? new Set(rs) : S.resp instanceof Set ? S.resp : new Set([S.resp]);
+      multiDrop(el, ['Todos', ...rs], mdLabel(all, [...sel].filter(x => rs.includes(x))), x => x === 'Todos' ? all : sel.has(x), x => {
+        if (x === 'Todos') S.resp = all ? new Set() : 'Todos'; else { const s = new Set(sel); s.has(x) ? s.delete(x) : s.add(x); S.resp = rs.every(y => s.has(y)) ? 'Todos' : s; } }); }
     if (k === 'nivel') { const ns = Object.keys(C.NIVEL_ORD), all = !S.niveis || ns.every(n => S.niveis.has(n));
       // multisseleção; 'Todos' marca/desmarca todos os níveis (S.niveis = null → todos)
       btnSlicer(el, ['Todos', ...ns], n => n === 'Todos' ? all : !S.niveis || S.niveis.has(n), n => { if (n === 'Todos') S.niveis = all ? new Set() : null;
@@ -306,7 +313,7 @@ function renderAting() {
 }
 function renderPrint() {
   const sec = $('#tab-print'); renderSlicers(sec); const b = base();
-  $('#printHead').textContent = `· Ano ${S.ano} · ${S.empresa || 'Todas'} · ${S.cargos.size ? [...S.cargos].join(', ') : 'Todos os cargos'}`;
+  $('#printHead').textContent = `· Ano ${S.ano} · ${S.empresa || 'Todas'} · ${S.cargos.size ? [...S.cargos].filter(c => c !== MD_NONE).join(', ') || 'nenhum cargo' : 'Todos os cargos'}`;
   $('#pt1').textContent = 'Mês: ' + S.mes;
   table($('#tblP1'), b.filter(r => r.mes === S.mes)); table($('#tblP2'), b.filter(r => r.mes === 'Acumulado'));
   kpiBook('kP1', b.filter(r => r.mes === S.mes)); kpiBook('kP2', b.filter(r => r.mes === 'Acumulado'));
@@ -401,7 +408,39 @@ function renderComp() {
   else if (rk.length === 1) h += '<tr><td class="l muted" colspan="${anyD ? 8 : 7}">Apenas 1 pessoa visível neste nível — a comparação aparece quando houver mais pessoas no seu perfil de acesso.</td></tr>';
   $('#tblCmp').innerHTML = h;
 }
-function render() { if (!ROWS.length) return; ({ painel:renderPainel, ating:renderAting, print:renderPrint, comp:renderComp })[curTab()](); }
+// ---------- Empresa (PLR): Atingimento PLR = Resultado da Empresa × Resultado do Book × 1,6 ----------
+// Book da empresa = book do nível 'Empresa' (Book Geral); Resultado da Empresa = Ind.(%) (atgInd) do indicador 'Resultado da Empresa' desse book
+// (atingimento realizado/meta já com sinal/limite do Book; não usa o valor bruto, que vem em escalas diferentes: % ou fração);
+// Resultado do Book = Σ Book(%) de todos os indicadores do book (inclui o próprio Resultado da Empresa, com seu peso).
+const PLR_FATOR = 1.6, isRE = s => /resultado\s+da\s+empresa/i.test(s || '');
+function bookEmpresa(emp, mes) { const rs = ROWS.filter(r => r.ano === S.ano && r.empresa === emp && r.mes === mes);
+  let b = rs.filter(r => r.nivel === 'Empresa'); if (!b.length) b = rs.filter(r => /^book geral/i.test(r.cargo)); return b; }
+function plrCalc(rows) { const re = rows.find(r => isRE(r.indicador)), real = rows.some(r => !r.semDado);
+  const book = real ? rows.reduce((s, r) => s + (r.atgBook3 || 0), 0) : null, fRE = re && !re.semDado ? re.atgInd : null;
+  return { re, fRE, book, plr:fRE === null || book === null ? null : fRE * book * PLR_FATOR }; }
+function renderEmp() {
+  const sec = $('#tab-emp'); renderSlicers(sec);
+  const es = uniq(ROWS.filter(r => r.ano === S.ano && (r.nivel === 'Empresa' || /^book geral/i.test(r.cargo))).map(r => r.empresa));
+  if (!es.includes(S.empPlr)) S.empPlr = es.includes(S.empresa) ? S.empresa : es[0];
+  btnSlicer($('#empPlrEmp'), es, e => e === S.empPlr, e => S.empPlr = e);
+  const rows = S.empPlr ? bookEmpresa(S.empPlr, S.mes) : [], P = plrCalc(rows);
+  $('#empHead').textContent = `· ${S.empPlr || '—'} · ${S.mes === 'Acumulado' ? 'Acumulado' : 'Mês ' + S.mes} ${S.ano}${rows[0] ? ' · ' + rows[0].cargo : ''}`;
+  const srt = [...rows].sort((a, b) => isRE(b.indicador) - isRE(a.indicador) || b.peso - a.peso || a.indicador.localeCompare(b.indicador));
+  let h = '<tr><th>Indicador</th><th>Peso</th><th>Und.</th><th>Meta</th><th>Realizado</th><th>Atingimento</th><th>Farol</th><th>Valor (Atg × Peso)</th></tr>';
+  for (const r of srt) { const f = C.farol(r);
+    h += `<tr class="${r.semDado ? 'semdado' : ''}${isRE(r.indicador) ? ' plr-re' : ''}"><td class="l">${r.indicador}</td><td>${r.peso}</td><td class="c">${r.unidade}</td><td>${fmtV(r.meta, r)}</td><td>${r.semDado ? '<i>sem dados</i>' : fmtV(r.realizado, r)}</td>
+      <td class="fc ${f}">${r.semDado ? '—' : pct(r.atgInd, 1)}</td><td class="c"><span class="f ${f}">${FAROL[f]}</span></td><td>${r.semDado ? '—' : pct(r.atgBook3, 1)}</td></tr>`; }
+  const pT = rows.reduce((s, r) => s + r.peso, 0), fB = P.book === null ? 'sem' : C.farol({ semDado:false, atgInd:pT ? P.book / (pT / 100) : 0 });
+  h += `<tr class="tot"><td class="l">Resultado do Book</td><td>${pT}</td><td></td><td></td><td></td><td></td><td class="c"><span class="f ${fB}">${FAROL[fB]}</span></td><td class="fc ${fB}"><b>${pct(P.book, 1)}</b></td></tr>`;
+  $('#tblEmp').innerHTML = rows.length ? h : '<tr><td class="cmp-empty">Sem book de empresa para o período.</td></tr>';
+  const cor = v => v === null ? 'sem' : C.farol({ semDado:false, atgInd:v });
+  $('#plrRE').textContent = pct(P.fRE, 1); $('#plrRE').className = 'fc ' + cor(P.fRE);
+  $('#plrRESub').textContent = P.re ? (P.re.semDado ? 'sem dados' : `Realizado ${fmtV(P.re.realizado, P.re)} / Meta ${fmtV(P.re.meta, P.re)}`) : 'indicador não encontrado no book';
+  $('#plrBook').textContent = pct(P.book, 1); $('#plrBook').className = 'fc ' + fB; $('#plrBookSub').textContent = `Σ Valor de ${rows.length} indicador(es)`;
+  $('#plrRes').textContent = pct(P.plr, 1);
+  $('#plrResSub').textContent = P.plr === null ? '' : `${nf(4).format(P.fRE)} × ${nf(4).format(P.book)} × 1,6 = ${nf(4).format(P.plr)}`;
+}
+function render() { if (!ROWS.length) return; $('.tabs [data-tab=emp]').classList.toggle('hidden', !ROWS.some(r => r.nivel === 'Empresa' || /^book geral/i.test(r.cargo))); ({ painel:renderPainel, ating:renderAting, print:renderPrint, comp:renderComp, emp:renderEmp })[curTab()](); }
 if (location.hash === '#demo' || !window.REAL_DATA) $('#demo').click();
 else if (window.REAL_DATA) (LAST_SRC = { kind:'real' }, loadAoa(REAL_DATA.meta, REAL_DATA.realizado, false, REAL_DATA.mtime));
 
@@ -419,7 +458,7 @@ $('#btnRefresh').onclick = () => {
       // restaura filtros que ainda existem nos dados
       if (ROWS.some(r => r.ano === keep.ano)) S.ano = keep.ano;
       if (keep.empresa === null || ROWS.some(r => r.empresa === keep.empresa)) S.empresa = keep.empresa;
-      S.mes = keep.mes; S.cargos = new Set([...keep.cargos].filter(c => ROWS.some(r => r.cargo === c)));
+      S.mes = keep.mes; S.cargos = new Set([...keep.cargos].filter(c => c === MD_NONE || ROWS.some(r => r.cargo === c)));
       S.resp = keep.resp; S.niveis = keep.niveis; S.indicador = keep.indicador; S.selInd = keep.selInd; S.atgView = keep.atgView;
       render();
     } catch (err) { alert('Erro ao atualizar: ' + err.message); }

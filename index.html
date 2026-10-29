@@ -3,7 +3,7 @@
 <link rel="icon" href="data:,">
 <meta name="theme-color" content="#272e32">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="style.css?v=1793285352">
+<link rel="stylesheet" href="style.css?v=1793286033">
 <script src="lib/xlsx.full.min.js"></script><script src="lib/chart.umd.min.js"></script>
 <script src="calc.js"></script><script src="demo-data.js"></script>
 </head><body>
@@ -13,7 +13,8 @@
   <nav class="tabs" aria-label="Páginas">
     <button data-tab="painel" class="active"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Painel</span></button>
     <button data-tab="ating" class="hidden" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg><span>Atingimento</span></button>
-    <button data-tab="print"><svg viewBox="0 0 24 24"><path d="M21.5 2.5L10.5 13.5M21.5 2.5l-7 19-4-8-8-4z"/></svg><span>Resumo</span></button>
+    <button data-tab="print"><svg viewBox="0 0 24 24"><path d="M21.5 2.5L10.5 13.5M21.5 2.5l-7 19-4-8-8-4z"/></svg><span>Envio</span></button>
+    <button data-tab="emp"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-5h6v5M9 11h.01M15 11h.01"/></svg><span>Empresa</span></button>
     <button data-tab="comp"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Comparativo</span></button>
   </nav>
   <div class="side-actions">
@@ -55,10 +56,21 @@
   <div class="panel filters no-print"><div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
   <div class="slicers"><div class="sl"><h4>EMPRESA</h4><div class="btns" data-sl="empresa"></div></div><div class="sl"><h4>CARGO</h4><div data-sl="cargo"></div></div><div class="sl"><h4>RESPONSÁVEL</h4><div data-sl="resp"></div></div>
    <div class="sl"><h4>&nbsp;</h4><button id="btnPrint" class="printbtn">⤓ Exportar</button></div></div></div>
-  <div class="panel"><h3 class="ptl">Resumo <small id="printHead"></small></h3>
+  <div class="panel"><h3 class="ptl">Envio <small id="printHead"></small></h3>
    <h3 class="ptitle" id="pt1"></h3><div class="kpis"><div class="kpi"><small>Atingimento Book</small><b id="kP1Book">—</b></div><div class="kpi"><small>Atingimento Desafio</small><b id="kP1Desf">—</b></div><div class="kpi"><small>Δ Desafio x Book</small><b id="kP1Delta" class="delta">—</b></div></div><div class="tablewrap inner"><table class="ind" id="tblP1"></table></div></div>
   <div class="panel"><h3 class="ptl">Acumulado</h3><div class="kpis"><div class="kpi"><small>Atingimento Book</small><b id="kP2Book">—</b></div><div class="kpi"><small>Atingimento Desafio</small><b id="kP2Desf">—</b></div><div class="kpi"><small>Δ Desafio x Book</small><b id="kP2Delta" class="delta">—</b></div></div><div class="tablewrap inner"><table class="ind" id="tblP2"></table></div></div>
   <div class="panel cons-chart"><h3 class="ptl">Atingimento mensal · Book</h3><div class="chart wide"><canvas id="chMes3"></canvas></div></div>
+ </section>
+ <section id="tab-emp" class="tab hidden">
+  <div class="panel filters"><div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
+  <div class="slicers"><div class="sl"><h4>EMPRESA</h4><div class="btns" id="empPlrEmp"></div></div></div></div>
+  <div class="panel"><h3 class="ptl">Atingimento PLR <small id="empHead"></small></h3>
+   <div class="plr-strip"><div class="plr-c"><small>Resultado da Empresa</small><b id="plrRE">—</b><em id="plrRESub"></em></div><span class="plr-op">×</span>
+    <div class="plr-c"><small>Resultado do Book</small><b id="plrBook">—</b><em id="plrBookSub"></em></div><span class="plr-op">×</span>
+    <div class="plr-c"><small>Fator</small><b>1,6</b><em>fixo</em></div><span class="plr-op">=</span>
+    <div class="plr-c plr-res"><small>Atingimento PLR</small><b id="plrRes">—</b><em id="plrResSub"></em></div></div>
+   <div class="tablewrap inner"><table class="ind" id="tblEmp"></table></div>
+   <p class="plr-note">Resultado da Empresa = atingimento (Ind.%) do indicador “Resultado da Empresa” do book da empresa · Resultado do Book = soma dos valores (Atg × Peso) de todos os indicadores do book, incluindo o Resultado da Empresa.</p></div>
  </section>
  <section id="tab-comp" class="tab hidden">
   <div class="panel filters"><div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl grow"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
@@ -75,5 +87,5 @@
 
 <footer class="no-print"><img src="img/logo-smmetais.png" alt="SM Metais" width="90" height="26"><span>Informações confidenciais e de uso interno, exibidas conforme o perfil de acesso de cada usuário. Dados pessoais tratados em conformidade com a LGPD (Lei nº 13.709/2018).</span><span>© Grupo SM Metais</span></footer>
 </div></div>
-<script src="app.js?v=1793285352"></script>
+<script src="app.js?v=1793286033"></script>
 </body></html>
