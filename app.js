@@ -445,7 +445,7 @@ function empBlock(sf, mes) {
   $('#plrRESub' + sf).textContent = P.re ? (P.re.semDado ? 'sem dados' : `Realizado ${fmtV(P.re.realizado, P.re)} / Meta ${fmtV(P.re.meta, P.re)}`) : 'indicador não encontrado no book';
   $('#plrBook' + sf).textContent = pct(P.book, 1); $('#plrBook' + sf).className = 'fc ' + fB; $('#plrBookSub' + sf).textContent = `Σ Valor de ${rows.length} indicador(es)`;
   $('#plrRes' + sf).textContent = P.plr === null ? '—' : `${nf(2).format(P.plr)} - ${pct(Math.round(P.plr * 100) / 100 / PLR_FATOR, 1)}`; // fator PLR (2 casas, máx. 1,60) e % do fator exibido sobre 1,60
-  $('#plrResSub' + sf).textContent = P.plr === null ? '' : `${nf(4).format(P.fRE)} × ${nf(4).format(P.book)} × 1,6 = ${nf(4).format(P.plr)}`;
+  $('#plrResSub' + sf).textContent = P.plr === null ? '' : `Empresa ${nf(4).format(P.fRE)} × Book ${nf(4).format(P.book)} × Fator 1,6 = ${nf(4).format(P.plr)}`;
 }
 function render() { if (!ROWS.length) return; $('.tabs [data-tab=emp]').classList.toggle('hidden', !ROWS.some(r => r.nivel === 'Empresa' || /^book geral/i.test(r.cargo))); ({ painel:renderPainel, ating:renderAting, print:renderPrint, comp:renderComp, emp:renderEmp })[curTab()](); }
 if (location.hash === '#demo' || !window.REAL_DATA) $('#demo').click();
