@@ -53,7 +53,7 @@ window.addEventListener('afterprint', () => { const c = charts.chMes3; if (!c) r
 const curTab = () => $$('.tabs button.active')[0].dataset.tab;
 const fAno = r => r.ano === S.ano, fEmp = r => !S.empresa || r.empresa === S.empresa;
 const fCargo = r => !S.cargos.size || S.cargos.has(r.cargo), fResp = r => S.resp === 'Todos' || r.responsavel === S.resp;
-const fNivel = r => S.nivel === 'Todos' || r.nivel === S.nivel, fIndic = r => S.indicador === 'Todos' || r.indicador === S.indicador;
+const fNivel = r => !S.niveis || S.niveis.has(r.nivel), fIndic = r => S.indicador === 'Todos' || r.indicador === S.indicador;
 function base() { const t = curTab(); return ROWS.filter(r => fAno(r) && fEmp(r) && fCargo(r) && (t === 'ating' ? fNivel(r) && fIndic(r) : fResp(r))); }
 const uniq = a => [...new Set(a)].sort((x, y) => x.localeCompare(y, 'pt-BR'));
 
@@ -72,10 +72,15 @@ function renderSlicers(sec) {
     const k = el.dataset.sl;
     if (k === 'ano') btnSlicer(el, anos, a => a === S.ano, a => S.ano = a);
     if (k === 'mes') btnSlicer(el, MESES, m => m === S.mes, m => S.mes = m);
-    if (k === 'empresa') btnSlicer(el, uniq([...EMPRESAS, ...ROWS.map(r => r.empresa)]), e => e === S.empresa, e => { S.empresa = (S.empresa === e && curTab() === 'ating') ? null : e; S.cargos = new Set(); S.resp = 'Todos'; });
+    if (k === 'empresa') { const es = uniq([...EMPRESAS, ...ROWS.map(r => r.empresa)]);
+      // 'Todas' seleciona todas as empresas (S.empresa = null); clicar de novo volta para a última empresa escolhida
+      btnSlicer(el, ['Todas', ...es], e => e === 'Todas' ? !S.empresa : e === S.empresa, e => { if (e === 'Todas') S.empresa = S.empresa ? (S.empLast = S.empresa, null) : (es.includes(S.empLast) ? S.empLast : es[0]); else { S.empresa = (S.empresa === e && curTab() === 'ating') ? null : e; if (S.empresa) S.empLast = S.empresa; } S.cargos = new Set(); S.resp = 'Todos'; }); }
     if (k === 'cargo') selSlicer(el, uniq(scope.filter(fNivel).map(r => r.cargo)), S.cargos.size === 1 ? [...S.cargos][0] : 'Todos', v => { S.cargos = v === 'Todos' ? new Set() : new Set([v]); S.resp = 'Todos'; });
     if (k === 'resp') selSlicer(el, uniq(scope.filter(fCargo).map(r => r.responsavel)), S.resp, v => S.resp = v);
-    if (k === 'nivel') selSlicer(el, Object.keys(C.NIVEL_ORD), S.nivel, v => S.nivel = v);
+    if (k === 'nivel') { const ns = Object.keys(C.NIVEL_ORD), all = !S.niveis || ns.every(n => S.niveis.has(n));
+      // multisseleção; 'Todos' marca/desmarca todos os níveis (S.niveis = null → todos)
+      btnSlicer(el, ['Todos', ...ns], n => n === 'Todos' ? all : !S.niveis || S.niveis.has(n), n => { if (n === 'Todos') S.niveis = all ? new Set() : null;
+        else { const s = new Set(S.niveis || ns); s.has(n) ? s.delete(n) : s.add(n); S.niveis = ns.every(x => s.has(x)) ? null : s; } }); }
     if (k === 'indicador') selSlicer(el, uniq(scope.filter(fCargo).map(r => r.indicador)), S.indicador, v => S.indicador = v);
   });
 }
@@ -327,13 +332,16 @@ function cmpVazio(id, msg) { if (charts[id]) { charts[id].destroy(); delete char
 function renderComp() {
   const sec = $('#tab-comp'); renderSlicers(sec);
   const niveis = Object.keys(C.NIVEL_ORD).filter(n => ROWS.some(r => r.ano === S.ano && r.nivel === n));
-  if (!niveis.includes(S.cmpNivel)) S.cmpNivel = niveis.includes(ROWS.find(r => r.ano === S.ano && r.empresa === S.empresa && S.cargos.has(r.cargo))?.nivel) ? ROWS.find(r => r.ano === S.ano && r.empresa === S.empresa && S.cargos.has(r.cargo)).nivel : niveis[0];
-  btnSlicer($('#cmpNivel'), niveis, n => n === S.cmpNivel, n => { S.cmpNivel = n; S.cmpEmps = null; });
-  const empsVis = uniq(ROWS.filter(r => r.ano === S.ano && r.nivel === S.cmpNivel).map(r => r.empresa));
+  if (!S.cmpNiveis || ![...S.cmpNiveis].every(n => niveis.includes(n))) S.cmpNiveis = new Set([niveis.includes(ROWS.find(r => r.ano === S.ano && r.empresa === S.empresa && S.cargos.has(r.cargo))?.nivel) ? ROWS.find(r => r.ano === S.ano && r.empresa === S.empresa && S.cargos.has(r.cargo)).nivel : niveis[0]].filter(Boolean));
+  // níveis: multisseleção com 'Todos' (marca/desmarca todos)
+  const nAll = niveis.length && niveis.every(n => S.cmpNiveis.has(n));
+  btnSlicer($('#cmpNivel'), ['Todos', ...niveis], n => n === 'Todos' ? nAll : S.cmpNiveis.has(n), n => { if (n === 'Todos') S.cmpNiveis = new Set(nAll ? [] : niveis); else S.cmpNiveis.has(n) ? S.cmpNiveis.delete(n) : S.cmpNiveis.add(n); S.cmpEmps = null; });
+  S.cmpNivel = nAll ? 'todos os níveis' : [...S.cmpNiveis].join(', ');
+  const empsVis = uniq(ROWS.filter(r => r.ano === S.ano && S.cmpNiveis.has(r.nivel)).map(r => r.empresa));
   if (!S.cmpEmps) S.cmpEmps = new Set(empsVis);
   const selAll = empsVis.every(e => S.cmpEmps.has(e));
   btnSlicer($('#cmpEmp'), ['Todas', ...empsVis], e => e === 'Todas' ? selAll : S.cmpEmps.has(e), e => { if (e === 'Todas') S.cmpEmps = selAll ? new Set() : new Set(empsVis); else S.cmpEmps.has(e) ? S.cmpEmps.delete(e) : S.cmpEmps.add(e); });
-  const all = pessoasNivel(S.cmpNivel).filter(p => S.cmpEmps.has(p.empresa)), com = all.filter(p => p.book !== null), mNivel = media(com.map(p => p.book));
+  const all = [...S.cmpNiveis].flatMap(pessoasNivel).filter(p => S.cmpEmps.has(p.empresa)), com = all.filter(p => p.book !== null), mNivel = media(com.map(p => p.book));
   $('#cmpSub').textContent = `· ${S.cmpNivel || '—'} · ${S.mes === 'Acumulado' ? 'Acumulado' : 'Mês ' + S.mes} ${S.ano}`;
   // KPIs
   const best = com.length ? com.reduce((a, p) => p.book > a.book ? p : a) : null, worst = com.length ? com.reduce((a, p) => p.book < a.book ? p : a) : null;
@@ -346,7 +354,7 @@ function renderComp() {
   $('#cmpEmpSub').textContent = `· ${selAll ? 'todas as empresas' : [...S.cmpEmps].sort().join(', ') || 'nenhuma empresa'}`;
   const opt = (extra) => ({ indexAxis:'y', maintainAspectRatio:false, animation:false, layout:{ padding:{ right:46 } },
     scales:{ x:{ min:0, suggestedMax:1.15, ticks:pctTick }, y:{ ticks:{ autoSkip:false } } }, plugins:{ legend:legendaCmp(), ...extra } });
-  if (!emp.length) cmpVazio('chCmpEmp', S.cmpEmps.size ? `Nenhuma pessoa do nível ${S.cmpNivel} nas empresas selecionadas no período.` : 'Selecione ao menos uma empresa.');
+  if (!emp.length) cmpVazio('chCmpEmp', S.cmpEmps.size ? `Nenhuma pessoa do nível ${S.cmpNivel} nas empresas selecionadas no período.` : S.cmpNiveis.size ? 'Selecione ao menos uma empresa.' : 'Selecione ao menos um nível.');
   else { cmpVazio('chCmpEmp'); $('#chCmpEmp').parentElement.style.height = Math.max(170, 70 + emp.length * 46) + 'px';
     chart('chCmpEmp', { type:'bar', data:{ labels:emp.map(p => `${p.pessoa} · ${p.empresa}${p.book === null ? ' (sem dados)' : ''}`), datasets:[
       { label:'Atingimento Book', data:emp.map(p => p.book), backgroundColor:emp.map(p => FAROL_COR[p.st]), borderRadius:6, borderSkipped:false, maxBarThickness:18 },
@@ -396,7 +404,7 @@ $('#btnRefresh').onclick = () => {
       if (ROWS.some(r => r.ano === keep.ano)) S.ano = keep.ano;
       if (keep.empresa === null || ROWS.some(r => r.empresa === keep.empresa)) S.empresa = keep.empresa;
       S.mes = keep.mes; S.cargos = new Set([...keep.cargos].filter(c => ROWS.some(r => r.cargo === c)));
-      S.resp = keep.resp; S.nivel = keep.nivel; S.indicador = keep.indicador; S.selInd = keep.selInd; S.atgView = keep.atgView;
+      S.resp = keep.resp; S.niveis = keep.niveis; S.indicador = keep.indicador; S.selInd = keep.selInd; S.atgView = keep.atgView;
       render();
     } catch (err) { alert('Erro ao atualizar: ' + err.message); }
     setTimeout(() => { btn.disabled = false; btn.classList.remove('spin'); }, 450);
