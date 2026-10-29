@@ -200,3 +200,7 @@ body.nostick .tab>.panel.filters{position:static}
 /* 29/10: linha cinza do logo alinhada à linha vermelha do cabeçalho (altura = --top-h medida via JS); menu lateral 20px mais estreito */
 :root{--side:208px}
 @media (min-width:901px){.side .brand{box-sizing:border-box;height:var(--top-h,63px);padding:0 16px;display:flex;align-items:center;justify-content:center;flex:none}.side .brand img{height:36px}}
+/* 29/10: rodapé fixo na base da tela (todas as guias); conteúdo com folga para não ficar escondido */
+footer{position:fixed;left:var(--side);right:0;bottom:0;z-index:6;margin:0!important}
+main,#drop{padding-bottom:calc(var(--foot-h,46px) + 16px)}
+@media (max-width:900px){footer{left:0}}
