@@ -62,7 +62,7 @@ const MD_NONE = '\u0000nenhum', mdLabel = (all, sel) => all ? 'Todos' : !sel.len
 function multiDrop(el, items, label, isOn, onClick) { const sc = el.querySelector('.md-list')?.scrollTop || 0; el.innerHTML = ''; el.classList.add('mdrop'); el.classList.toggle('open', S.mdOpen === el.id);
   const b = document.createElement('button'); b.type = 'button'; b.className = 'md-btn'; b.textContent = label; b.onclick = () => { S.mdOpen = S.mdOpen === el.id ? null : el.id; el.classList.toggle('open', S.mdOpen === el.id); }; el.appendChild(b);
   const l = document.createElement('div'); l.className = 'md-list'; items.forEach((it, i) => { const lb = document.createElement('label'); lb.className = i ? '' : 'md-all'; const c = document.createElement('input'); c.type = 'checkbox'; c.checked = isOn(it);
-    c.onchange = () => { S.mdOpen = el.id; onClick(it); render(); }; lb.append(c, document.createTextNode(' ' + it)); l.appendChild(lb); }); el.appendChild(l); l.scrollTop = sc; }
+    c.onchange = () => { S.mdOpen = el.id; onClick(it); render(); }; lb.append(c, document.createTextNode(' ' + (it === '' ? '(sem nome)' : it))); l.appendChild(lb); }); el.appendChild(l); l.scrollTop = sc; }
 document.addEventListener('click', e => { if (S.mdOpen && !e.target.closest('.mdrop')) { S.mdOpen = null; document.querySelectorAll('.mdrop.open').forEach(x => x.classList.remove('open')); } });
 function btnSlicer(el, items, isOn, onClick) { el.innerHTML = ''; items.forEach(it => { const b = document.createElement('button'); b.textContent = it; b.className = isOn(it) ? 'on' : ''; b.onclick = () => { onClick(it); render(); }; el.appendChild(b); }); }
 function selSlicer(el, items, val, onCh, multiple) {
@@ -423,8 +423,14 @@ function renderEmp() {
   const es = uniq(ROWS.filter(r => r.ano === S.ano && (r.nivel === 'Empresa' || /^book geral/i.test(r.cargo))).map(r => r.empresa));
   if (!es.includes(S.empPlr)) S.empPlr = es.includes(S.empresa) ? S.empresa : es[0];
   btnSlicer($('#empPlrEmp'), es, e => e === S.empPlr, e => S.empPlr = e);
-  const rows = S.empPlr ? bookEmpresa(S.empPlr, S.mes) : [], P = plrCalc(rows);
-  $('#empHead').textContent = `· ${S.empPlr || '—'} · ${S.mes === 'Acumulado' ? 'Acumulado' : 'Mês ' + S.mes} ${S.ano}${rows[0] ? ' · ' + rows[0].cargo : ''}`;
+  // bloco 1 = mês do filtro (se o filtro for Acumulado, usa o último mês fechado com dados); bloco 2 = Acumulado (sempre)
+  const blkA = $('#empBlkA') || (() => { const c = $('#empBlk').cloneNode(true); c.id = 'empBlkA'; c.querySelectorAll('[id]').forEach(e => e.id += 'A'); $('#empBlk').after(c); return c; })();
+  let mes1 = S.mes; if (mes1 === 'Acumulado') { const ms = MESES.filter((m, i) => m !== 'Acumulado' && mesEsperado(i) && bookEmpresa(S.empPlr, m).some(r => !r.semDado && r.realizado)); mes1 = ms[ms.length - 1] || MESES[0]; }
+  empBlock('', mes1); empBlock('A', 'Acumulado');
+}
+function empBlock(sf, mes) {
+  const rows = S.empPlr ? bookEmpresa(S.empPlr, mes) : [], P = plrCalc(rows);
+  $('#empHead' + sf).innerHTML = `· ${S.empPlr || '—'} · <span class="plr-per">${mes === 'Acumulado' ? 'Acumulado' : 'Mês ' + mes} ${S.ano}</span>${rows[0] ? ' · ' + rows[0].cargo : ''}`;
   const srt = [...rows].sort((a, b) => isRE(b.indicador) - isRE(a.indicador) || b.peso - a.peso || a.indicador.localeCompare(b.indicador));
   let h = '<tr><th>Indicador</th><th>Peso</th><th>Und.</th><th>Meta</th><th>Realizado</th><th>Atingimento</th><th>Farol</th><th>Valor (Atg × Peso)</th></tr>';
   for (const r of srt) { const f = C.farol(r);
@@ -432,13 +438,13 @@ function renderEmp() {
       <td class="fc ${f}">${r.semDado ? '—' : pct(r.atgInd, 1)}</td><td class="c"><span class="f ${f}">${FAROL[f]}</span></td><td>${r.semDado ? '—' : pct(r.atgBook3, 1)}</td></tr>`; }
   const pT = rows.reduce((s, r) => s + r.peso, 0), fB = P.book === null ? 'sem' : C.farol({ semDado:false, atgInd:pT ? P.book / (pT / 100) : 0 });
   h += `<tr class="tot"><td class="l">Resultado do Book</td><td>${pT}</td><td></td><td></td><td></td><td></td><td class="c"><span class="f ${fB}">${FAROL[fB]}</span></td><td class="fc ${fB}"><b>${pct(P.book, 1)}</b></td></tr>`;
-  $('#tblEmp').innerHTML = rows.length ? h : '<tr><td class="cmp-empty">Sem book de empresa para o período.</td></tr>';
+  $('#tblEmp' + sf).innerHTML = rows.length ? h : '<tr><td class="cmp-empty">Sem book de empresa para o período.</td></tr>';
   const cor = v => v === null ? 'sem' : C.farol({ semDado:false, atgInd:v });
-  $('#plrRE').textContent = pct(P.fRE, 1); $('#plrRE').className = 'fc ' + cor(P.fRE);
-  $('#plrRESub').textContent = P.re ? (P.re.semDado ? 'sem dados' : `Realizado ${fmtV(P.re.realizado, P.re)} / Meta ${fmtV(P.re.meta, P.re)}`) : 'indicador não encontrado no book';
-  $('#plrBook').textContent = pct(P.book, 1); $('#plrBook').className = 'fc ' + fB; $('#plrBookSub').textContent = `Σ Valor de ${rows.length} indicador(es)`;
-  $('#plrRes').textContent = P.plr === null ? '—' : `${nf(2).format(P.plr)} - ${pct(Math.round(P.plr * 100) / 100 / PLR_FATOR, 1)}`; // fator PLR (2 casas, máx. 1,60) e % do fator exibido sobre 1,60
-  $('#plrResSub').textContent = P.plr === null ? '' : `${nf(4).format(P.fRE)} × ${nf(4).format(P.book)} × 1,6 = ${nf(4).format(P.plr)}`;
+  $('#plrRE' + sf).textContent = pct(P.fRE, 1); $('#plrRE' + sf).className = 'fc ' + cor(P.fRE);
+  $('#plrRESub' + sf).textContent = P.re ? (P.re.semDado ? 'sem dados' : `Realizado ${fmtV(P.re.realizado, P.re)} / Meta ${fmtV(P.re.meta, P.re)}`) : 'indicador não encontrado no book';
+  $('#plrBook' + sf).textContent = pct(P.book, 1); $('#plrBook' + sf).className = 'fc ' + fB; $('#plrBookSub' + sf).textContent = `Σ Valor de ${rows.length} indicador(es)`;
+  $('#plrRes' + sf).textContent = P.plr === null ? '—' : `${nf(2).format(P.plr)} - ${pct(Math.round(P.plr * 100) / 100 / PLR_FATOR, 1)}`; // fator PLR (2 casas, máx. 1,60) e % do fator exibido sobre 1,60
+  $('#plrResSub' + sf).textContent = P.plr === null ? '' : `${nf(4).format(P.fRE)} × ${nf(4).format(P.book)} × 1,6 = ${nf(4).format(P.plr)}`;
 }
 function render() { if (!ROWS.length) return; $('.tabs [data-tab=emp]').classList.toggle('hidden', !ROWS.some(r => r.nivel === 'Empresa' || /^book geral/i.test(r.cargo))); ({ painel:renderPainel, ating:renderAting, print:renderPrint, comp:renderComp, emp:renderEmp })[curTab()](); }
 if (location.hash === '#demo' || !window.REAL_DATA) $('#demo').click();

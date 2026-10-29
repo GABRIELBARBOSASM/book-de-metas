@@ -204,3 +204,10 @@ body.nostick .tab>.panel.filters{position:static}
 footer{position:fixed;left:var(--side);right:0;bottom:0;z-index:6;margin:0!important}
 main,#drop{padding-bottom:calc(var(--foot-h,46px) + 16px)}
 @media (max-width:900px){footer{left:0}}
+
+.plr-per{color:var(--red);font-weight:600}
+#tblEmpA tr.plr-re td{background:#fbf3e6}#tblEmpA tr.tot td{border-top:2px solid #272e32;font-weight:600}
+/* 29/10: caixas de seleção das listas suspensas (Cargo, Responsável, Indicador) desenhadas em CSS – vermelho igual em todos os navegadores */
+.md-list input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:14px;height:14px;margin:2px 0 0;border:1.5px solid #a30000;border-radius:3px;background:#fff;display:inline-grid;place-content:center;cursor:pointer}
+.md-list input[type=checkbox]:checked{background:#a30000}
+.md-list input[type=checkbox]:checked::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
