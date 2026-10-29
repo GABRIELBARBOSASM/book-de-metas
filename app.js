@@ -84,16 +84,16 @@ function renderSlicers(sec) {
 const FAROL = { ok:'✓', falha:'✗', parcial:'!', sem:'—' };
 function table(el, rows) {
   rows = [...rows].sort((a, b) => b.peso - a.peso || a.indicador.localeCompare(b.indicador));
-  const multi = new Set(rows.map(r => r.cargo + r.responsavel)).size > 1;
-  let h = `<tr><th>Indicador</th>${multi ? '<th>Responsável</th>' : ''}<th>Peso</th><th>Und.</th><th>Sinal</th><th>Limite</th><th>Desf.</th><th>Meta</th><th>Realizado</th><th>∆</th><th>∆(%)</th><th>Ind.(%)</th><th>Farol</th><th>Book(%)</th><th>Desf.(%)</th></tr>`;
+  const multi = new Set(rows.map(r => r.cargo + r.responsavel)).size > 1, tD = temDesf(rows);
+  let h = `<tr><th>Indicador</th>${multi ? '<th>Responsável</th>' : ''}<th>Peso</th><th>Und.</th><th>Sinal</th><th>Limite</th>${tD ? '<th>Desf.</th>' : ''}<th>Meta</th><th>Realizado</th><th>∆</th><th>∆(%)</th><th>Ind.(%)</th><th>Farol</th><th>Book(%)</th>${tD ? '<th>Desf.(%)</th>' : ''}</tr>`;
   for (const r of rows) {
     const f = C.farol(r);
     h += `<tr class="${r.semDado ? 'semdado' : ''}"><td class="l" title="${r.indicador}">${r.indicador}</td>${multi ? `<td class="l">${r.cargo} – ${r.responsavel}</td>` : ''}<td>${r.peso}</td><td class="c">${r.unidade}</td><td class="c">${r.sinal}</td>
-      <td>${pct(r.limite)}</td><td>${pct(r.desafio || 0, 1)}</td><td>${fmtV(r.meta, r)}</td><td>${r.semDado ? '<i>sem dados</i>' : fmtV(r.realizado, r)}</td>
+      <td>${pct(r.limite)}</td>${tD ? `<td>${C.num(r.desafio) ? pct(r.desafio, 1) : ''}</td>` : ''}<td>${fmtV(r.meta, r)}</td><td>${r.semDado ? '<i>sem dados</i>' : fmtV(r.realizado, r)}</td>
       <td class="fc ${f}">${r.semDado ? '—' : fmtV(r.delta, r)}</td><td class="fc ${f}">${r.semDado ? '—' : pct(r.deltaPct)}</td>
-      <td>${pct(r.atgInd)}</td><td class="c"><span class="f ${f}" title="${f === 'sem' ? 'sem dados' : pct(r.atgInd)}">${FAROL[f]}</span></td><td>${pct(r.atgBook3)}</td><td>${r.atgDesafio === null ? (C.num(r.desafio) ? '' : '<span class="muted sd">Sem desafio</span>') : pct(r.atgDesafio)}</td></tr>`;
+      <td>${pct(r.atgInd)}</td><td class="c"><span class="f ${f}" title="${f === 'sem' ? 'sem dados' : pct(r.atgInd)}">${FAROL[f]}</span></td><td>${pct(r.atgBook3)}</td>${tD ? `<td>${r.atgDesafio === null ? '' : pct(r.atgDesafio)}</td>` : ''}</tr>`;
   }
-  if (!rows.length) h += `<tr><td class="l" colspan="14">Nenhum indicador para os filtros selecionados.</td></tr>`;
+  if (!rows.length) h += `<tr><td class="l" colspan="${(multi ? 15 : 14) - (tD ? 0 : 2)}">Nenhum indicador para os filtros selecionados.</td></tr>`;
   el.innerHTML = h;
 }
 // grupos = um book (Empresa-Cargo-Responsável-Ano); com vários selecionados, média dos books
@@ -216,7 +216,7 @@ function renderPainel() {
   table($('#tblPainel'), cur);
   const g = new Set(cur.map(r => r.c5 + r.responsavel)).size || 1;
   $('#totBook').textContent = pct(cur.reduce((a, r) => a + r.atgBook3, 0) / g, 1);
-  $('#totDesf').textContent = cur.length ? pctDesf(desfAvg(cur)) : '—';
+  $('#totDesf').textContent = cur.length ? pctDesf(desfAvg(cur)) : '—'; showKpi('totDesf', temDesf(cur)); showKpi('kDeltaBook', temDesf(cur));
   const inds = uniq(b.map(r => r.indicador)); if (!inds.includes(S.selInd)) S.selInd = [...b].sort((x, y) => y.peso - x.peso)[0]?.indicador || null;
   const si = $('#selInd'); si.innerHTML = inds.map(i => `<option ${i === S.selInd ? 'selected' : ''}>${i}</option>`).join(''); si.onchange = () => { S.selInd = si.value; render(); };
   const ir = b.filter(r => r.indicador === S.selInd);
@@ -231,6 +231,8 @@ function renderPainel() {
   $('#kReal').textContent = ac.real === null ? 'sem dados' : fmtV(ac.real, ref); $('#kMeta').textContent = ac.meta === null ? '—' : fmtV(ac.meta, ref);
   const dlt = ac.real === null || ac.meta === null ? null : ac.real - ac.meta, aP = atgPonto(ac, ref);
   kpiDelta($('#kDelta'), dlt, v => `${v > 0 ? '+' : ''}${fmtV(v, ref)} | ${pct(aP, 1)}`, statusPonto(ac, ref), ref && ref.sinal === '↓');
+  { const okV = { des:temDesf(b), desind:temDesf(ir) }; $$('#atgToggle button').forEach(bt => { if (bt.dataset.v in okV) bt.hidden = !okV[bt.dataset.v]; });
+    if (S.atgView in okV && !okV[S.atgView]) S.atgView = S.atgView === 'des' ? 'book' : 'ind'; }
   $$('#atgToggle button').forEach(bt => { bt.classList.toggle('on', bt.dataset.v === S.atgView); bt.onclick = () => { S.atgView = bt.dataset.v; render(); }; });
   $('#atgSub').textContent = S.atgView === 'book' ? '· Book (todos os indicadores)' : S.atgView === 'des' ? '· Desafio do Book (todos os indicadores)' : S.atgView === 'desind' ? (S.selInd ? '· Desafio · ' + S.selInd : '') : (S.selInd ? '· ' + S.selInd : '');
   if (S.atgView === 'book') atgChart('chAtg', b); else if (S.atgView === 'des') desChart('chAtg', b); else if (S.atgView === 'desind') desIndChart('chAtg', [...M12, ac], ref); else indAtgChart('chAtg', [...M12, ac], ref);
@@ -263,9 +265,13 @@ function gauge(el, ac, ref) {
 // Atingimento Desafio: média só dos books COM desafio (Σ pesoDesafio > 0); nenhum → null ("Sem desafio")
 function desfAvg(rows) { const g = new Map(); rows.forEach(r => { const k = r.c5 + r.responsavel; const o = g.get(k) || { d:0, pd:0 }; o.d += r.atgBook4 || 0; o.pd += r.pesoDesafio || 0; g.set(k, o); });
   const c = [...g.values()].filter(o => o.pd > 0); return c.length ? c.reduce((a, o) => a + o.d, 0) / c.length : null; }
-const pctDesf = v => v === null ? 'Sem desafio' : pct(v, 1);
+const pctDesf = v => v === null ? '—' : pct(v, 1);
+// a visão tem desafio? (algum indicador com Desafio ou Peso Desafio) — sem nenhum, a informação de desafio some
+const temDesf = rows => rows.some(r => C.num(r.desafio) || (r.pesoDesafio || 0) > 0);
+const showKpi = (id, on) => { const k = $('#' + id).closest('.kpi'); if (k) k.hidden = !on; };
 function kpiBook(p, rows) { const g = new Set(rows.map(r => r.c5 + r.responsavel)).size || 1;
   const tb = rows.reduce((s, r) => s + r.atgBook3, 0) / g, td = desfAvg(rows);
+  const tD = temDesf(rows); showKpi(p + 'Desf', tD); showKpi(p + 'Delta', tD);
   $('#' + p + 'Book').textContent = pct(tb, 1); $('#' + p + 'Desf').textContent = rows.length ? pctDesf(td) : '—';
   kpiDelta($('#' + p + 'Delta'), rows.length && td !== null ? td - tb : null, v => (v > 0 ? '+' : '') + nf(1).format(v * 100) + ' p.p.', null); }
 // Δ com seta: cor pelo farol (ou sinal, quando não há farol)
@@ -312,7 +318,7 @@ const metaVPlugin = { id:'metaV', afterDatasetsDraw(ch) { const x = ch.scales.x,
 const metaHPlugin = { id:'metaH', afterDatasetsDraw(ch) { const y = ch.scales.y, a = ch.chartArea, py = y.getPixelForValue(1); const c = ch.ctx; c.save(); c.strokeStyle = '#272e32'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(a.left, py); c.lineTo(a.right, py); c.stroke(); c.restore(); } };
 // rótulo "Sem desafio" no lugar da barra cinza (pessoa sem desafio)
 const semDesfPlugin = { id:'semDesf', afterDatasetsDraw(ch) { const ds = ch.data.datasets[1], m0 = ch.getDatasetMeta(0), c = ch.ctx; if (!ds) return; c.save(); c.font = "italic 500 10.5px 'Poppins', Arial, sans-serif"; c.fillStyle = '#8a959e'; c.textAlign = 'left';
-  ds.data.forEach((v, i) => { const e = m0.data[i]; if (v === null && ch.data.datasets[0].data[i] !== null && e) c.fillText('Sem desafio', ch.chartArea.left + 4, e.y + 16); }); c.restore(); } };
+  ds.data.forEach((v, i) => { const e = m0.data[i]; if (v === null && ch.data.datasets[0].data[i] !== null && e) { /* sem rótulo */ } }); c.restore(); } };
 const LG_DESF = { text:'Atingimento Desafio', fillStyle:'#5f6c77', strokeStyle:'#5f6c77', pointStyle:'rectRounded', lineWidth:0 };
 function legendaCmp() { const lg = legendaFarol([{ text:'Meta 100%', fillStyle:'#272e32', strokeStyle:'#272e32', pointStyle:'line', lineWidth:3 }]), g = lg.labels.generateLabels;
   lg.labels.generateLabels = () => { const l = g(); l.splice(1, 0, LG_DESF); return l; }; return lg; }
@@ -335,6 +341,7 @@ function renderComp() {
   $('#cmpMelhorN').textContent = best ? `${best.pessoa} · ${best.empresa}` : ''; $('#cmpPiorN').textContent = worst ? `${worst.pessoa} · ${worst.empresa}` : '';
   $('#cmpN').textContent = `${all.length}`; $('#cmpNsub').textContent = all.length - com.length ? `(${all.length - com.length} sem dados)` : '';
   // (1) ranking na empresa selecionada
+  const anyD = all.some(p => p.temD);
   const emp = [...all].sort((a, b) => (b.book ?? -1) - (a.book ?? -1));
   $('#cmpEmpSub').textContent = `· ${selAll ? 'todas as empresas' : [...S.cmpEmps].sort().join(', ') || 'nenhuma empresa'}`;
   const opt = (extra) => ({ indexAxis:'y', maintainAspectRatio:false, animation:false, layout:{ padding:{ right:46 } },
@@ -343,8 +350,8 @@ function renderComp() {
   else { cmpVazio('chCmpEmp'); $('#chCmpEmp').parentElement.style.height = Math.max(170, 70 + emp.length * 46) + 'px';
     chart('chCmpEmp', { type:'bar', data:{ labels:emp.map(p => `${p.pessoa} · ${p.empresa}${p.book === null ? ' (sem dados)' : ''}`), datasets:[
       { label:'Atingimento Book', data:emp.map(p => p.book), backgroundColor:emp.map(p => FAROL_COR[p.st]), borderRadius:6, borderSkipped:false, maxBarThickness:18 },
-      { label:'Atingimento Desafio', data:emp.map(p => p.desf), backgroundColor:'#5f6c77', borderRadius:6, borderSkipped:false, maxBarThickness:18 } ] },
-      options:opt({ tooltip:{ callbacks:{ title:c => `${emp[c[0].dataIndex].pessoa} · ${emp[c[0].dataIndex].cargo}`, label:c => ` ${c.dataset.label}: ${c.raw === null ? (c.datasetIndex ? 'Sem desafio' : 'sem dados') : pct(c.raw, 1)}${c.datasetIndex ? '' : ' · ' + FAROL_TXT[emp[c.dataIndex].st]}` } } }),
+      ...(anyD ? [{ label:'Atingimento Desafio', data:emp.map(p => p.desf), backgroundColor:'#5f6c77', borderRadius:6, borderSkipped:false, maxBarThickness:18 }] : []) ] },
+      options:opt({ tooltip:{ callbacks:{ title:c => `${emp[c[0].dataIndex].pessoa} · ${emp[c[0].dataIndex].cargo}`, label:c => ` ${c.dataset.label}: ${c.raw === null ? (c.datasetIndex ? '—' : 'sem dados') : pct(c.raw, 1)}${c.datasetIndex ? '' : ' · ' + FAROL_TXT[emp[c.dataIndex].st]}` } } }),
       plugins:[labelPlugin, metaVPlugin, semDesfPlugin] }); }
   // (2) entre empresas: média e mediana do nível + nº de pessoas
   const emps = uniq(all.map(p => p.empresa)).map(e => { const ps = all.filter(p => p.empresa === e), v = ps.filter(p => p.book !== null).map(p => p.book), m = media(v);
@@ -361,13 +368,13 @@ function renderComp() {
       plugins:[labelPlugin, semDadoPlugin, metaHPlugin] }); }
   // (3) tabela
   const rk = [...all].sort((a, b) => (b.book ?? -1) - (a.book ?? -1));
-  let h = '<tr><th>Pos.</th><th>Pessoa</th><th>Empresa</th><th>Cargo</th><th>Atg. Book</th><th>Atg. Desafio</th><th>∆ vs média do nível</th><th>Farol</th></tr>';
+  let h = `<tr><th>Pos.</th><th>Pessoa</th><th>Empresa</th><th>Cargo</th><th>Atg. Book</th>${anyD ? '<th>Atg. Desafio</th>' : ''}<th>∆ vs média do nível</th><th>Farol</th></tr>`;
   rk.forEach((p, i) => { const dv = p.book === null || mNivel === null ? null : p.book - mNivel;
     h += `<tr class="${p.book === null ? 'semdado' : ''}"><td class="c">${p.book === null ? '—' : i + 1 + 'º'}</td><td class="l">${p.pessoa}</td><td class="l">${p.empresa}</td><td class="l">${p.cargo}</td>
-      <td>${p.book === null ? '<i>sem dados</i>' : pct(p.book, 1)}</td><td>${p.desf === null ? (p.book === null ? '—' : '<span class="muted">Sem desafio</span>') : pct(p.desf, 1)}</td>
+      <td>${p.book === null ? '<i>sem dados</i>' : pct(p.book, 1)}</td>${anyD ? `<td>${p.desf === null ? (p.book === null ? '—' : '') : pct(p.desf, 1)}</td>` : ''}
       <td class="fc ${p.st}">${dv === null ? '—' : (dv > 0 ? '+' : '') + nf(1).format(dv * 100) + ' p.p.'}</td><td class="c"><span class="f ${p.st}" title="${FAROL_TXT[p.st]}">${FAROL[p.st]}</span></td></tr>`; });
-  if (!rk.length) h += '<tr><td class="l" colspan="8">Nenhuma pessoa deste nível no período selecionado.</td></tr>';
-  else if (rk.length === 1) h += '<tr><td class="l muted" colspan="8">Apenas 1 pessoa visível neste nível — a comparação aparece quando houver mais pessoas no seu perfil de acesso.</td></tr>';
+  if (!rk.length) h += '<tr><td class="l" colspan="${anyD ? 8 : 7}">Nenhuma pessoa deste nível no período selecionado.</td></tr>';
+  else if (rk.length === 1) h += '<tr><td class="l muted" colspan="${anyD ? 8 : 7}">Apenas 1 pessoa visível neste nível — a comparação aparece quando houver mais pessoas no seu perfil de acesso.</td></tr>';
   $('#tblCmp').innerHTML = h;
 }
 function render() { if (!ROWS.length) return; ({ painel:renderPainel, ating:renderAting, print:renderPrint, comp:renderComp })[curTab()](); }
