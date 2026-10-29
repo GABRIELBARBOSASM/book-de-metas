@@ -309,12 +309,15 @@ function renderPrint() {
 // ---------- Comparativo: atingimento entre pessoas do mesmo Nível (dentro da empresa e entre empresas) ----------
 // Pessoa = book Empresa-Cargo-Responsável-Ano; Atg. Book = Σ Atg.Book3, Atg. Desafio = Σ Atg.Book4 (mesma regra dos KPIs do Painel);
 // farol = Atg. Book / (Σ peso/100) (mesma regra do gráfico mensal). Usa só o dataset carregado (a API já filtra por acesso).
-function pessoasNivel(nivel) {
+// inds (Set de indicadores, null = todos): só os indicadores marcados contam; pesos renormalizados
+// Atg = Σ(Atg.Book3 dos marcados) × 100/Σpeso(marcados) (pesos dos marcados somam 100%); 'Todos' = Atg. Book total atual
+function pessoasNivel(nivel, inds) {
   const g = new Map();
   ROWS.filter(r => r.ano === S.ano && r.mes === S.mes && r.nivel === nivel).forEach(r => {
-    const k = r.c5 + '|' + r.responsavel; const o = g.get(k) || { empresa:r.empresa, cargo:r.cargo, pessoa:r.responsavel, b:0, d:0, p:0, temD:false, real:false };
-    o.b += r.atgBook3; o.d += r.atgBook4 || 0; o.p += r.peso; o.temD ||= (r.pesoDesafio || 0) > 0; o.real ||= !r.semDado; g.set(k, o); });
-  return [...g.values()].map(o => ({ ...o, book:o.real ? o.b : null, desf:o.real && o.temD ? o.d : null,
+    const k = r.c5 + '|' + r.responsavel; const o = g.get(k) || { empresa:r.empresa, cargo:r.cargo, pessoa:r.responsavel, b:0, d:0, p:0, pt:0, n:0, temD:false, real:false };
+    o.pt += r.peso; g.set(k, o); if (inds && !inds.has(r.indicador)) return; o.n++;
+    o.b += r.atgBook3; o.d += r.atgBook4 || 0; o.p += r.peso; o.temD ||= (r.pesoDesafio || 0) > 0; o.real ||= !r.semDado; });
+  return [...g.values()].filter(o => o.n).map(o => { const f = inds && o.p ? 100 / o.p : 1; o.b *= f; o.d *= f; o.p *= f; return o; }).map(o => ({ ...o, book:o.real ? o.b : null, desf:o.real && o.temD ? o.d : null,
     st:!o.real ? 'sem' : C.farol({ semDado:false, atgInd:o.p ? o.b / (o.p / 100) : 0 }) }));
 }
 const media = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
@@ -342,8 +345,14 @@ function renderComp() {
   if (!S.cmpEmps) S.cmpEmps = new Set(empsVis);
   const selAll = empsVis.every(e => S.cmpEmps.has(e));
   btnSlicer($('#cmpEmp'), ['Todas', ...empsVis], e => e === 'Todas' ? selAll : S.cmpEmps.has(e), e => { if (e === 'Todas') S.cmpEmps = selAll ? new Set() : new Set(empsVis); else S.cmpEmps.has(e) ? S.cmpEmps.delete(e) : S.cmpEmps.add(e); });
-  const all = [...S.cmpNiveis].flatMap(pessoasNivel).filter(p => S.cmpEmps.has(p.empresa)), com = all.filter(p => p.book !== null), mNivel = media(com.map(p => p.book));
-  $('#cmpSub').textContent = `· ${S.cmpNivel || '—'} · ${S.mes === 'Acumulado' ? 'Acumulado' : 'Mês ' + S.mes} ${S.ano}`;
+  // Indicador: multisseleção com 'Todos' (S.cmpInds = null → todos); lista vem das pessoas do Nível/Empresas marcados
+  const indsVis = uniq(ROWS.filter(r => r.ano === S.ano && r.mes === S.mes && S.cmpNiveis.has(r.nivel) && S.cmpEmps.has(r.empresa)).map(r => r.indicador)).sort((a, b) => a.localeCompare(b, 'pt'));
+  if (S.cmpInds) { S.cmpInds = new Set([...S.cmpInds].filter(i => indsVis.includes(i))); if (indsVis.length && indsVis.every(i => S.cmpInds.has(i))) S.cmpInds = null; }
+  const iAll = !S.cmpInds;
+  btnSlicer($('#cmpInd'), ['Todos', ...indsVis], i => i === 'Todos' ? iAll : iAll || S.cmpInds.has(i), i => { if (i === 'Todos') S.cmpInds = iAll ? new Set() : null;
+    else { const s = new Set(S.cmpInds || indsVis); s.has(i) ? s.delete(i) : s.add(i); S.cmpInds = indsVis.every(x => s.has(x)) ? null : s; } });
+  const all = [...S.cmpNiveis].flatMap(n => pessoasNivel(n, S.cmpInds)).filter(p => S.cmpEmps.has(p.empresa)), com = all.filter(p => p.book !== null), mNivel = media(com.map(p => p.book));
+  $('#cmpSub').textContent = `· ${S.cmpNivel || '—'} · ${S.mes === 'Acumulado' ? 'Acumulado' : 'Mês ' + S.mes} ${S.ano}${S.cmpInds ? ` · ${S.cmpInds.size} indicador(es)` : ''}`;
   // KPIs
   const best = com.length ? com.reduce((a, p) => p.book > a.book ? p : a) : null, worst = com.length ? com.reduce((a, p) => p.book < a.book ? p : a) : null;
   $('#cmpMedia').textContent = pct(mNivel, 1); $('#cmpMelhor').textContent = best ? pct(best.book, 1) : '—'; $('#cmpPior').textContent = worst ? pct(worst.book, 1) : '—';
@@ -355,7 +364,7 @@ function renderComp() {
   $('#cmpEmpSub').textContent = `· ${selAll ? 'todas as empresas' : [...S.cmpEmps].sort().join(', ') || 'nenhuma empresa'}`;
   const opt = (extra) => ({ indexAxis:'y', maintainAspectRatio:false, animation:false, layout:{ padding:{ right:46 } },
     scales:{ x:{ min:0, suggestedMax:1.15, ticks:pctTick }, y:{ ticks:{ autoSkip:false } } }, plugins:{ legend:legendaCmp(), ...extra } });
-  if (!emp.length) cmpVazio('chCmpEmp', S.cmpEmps.size ? `Nenhuma pessoa do nível ${S.cmpNivel} nas empresas selecionadas no período.` : S.cmpNiveis.size ? 'Selecione ao menos uma empresa.' : 'Selecione ao menos um nível.');
+  if (!emp.length) cmpVazio('chCmpEmp', S.cmpEmps.size && (!S.cmpInds || S.cmpInds.size) ? `Nenhuma pessoa do nível ${S.cmpNivel} nas empresas selecionadas no período.` : !S.cmpNiveis.size ? 'Selecione ao menos um nível.' : !S.cmpEmps.size ? 'Selecione ao menos uma empresa.' : 'Selecione ao menos um indicador.');
   else { cmpVazio('chCmpEmp'); $('#chCmpEmp').parentElement.style.height = Math.max(170, 70 + emp.length * 46) + 'px';
     chart('chCmpEmp', { type:'bar', data:{ labels:emp.map(p => `${p.pessoa} · ${p.empresa}${p.book === null ? ' (sem dados)' : ''}`), datasets:[
       { label:'Atingimento Book', data:emp.map(p => p.book), backgroundColor:emp.map(p => FAROL_COR[p.st]), borderRadius:6, borderSkipped:false, maxBarThickness:18 },
