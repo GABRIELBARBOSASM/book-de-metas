@@ -437,7 +437,7 @@ function renderEmp() {
   $('#plrRE').textContent = pct(P.fRE, 1); $('#plrRE').className = 'fc ' + cor(P.fRE);
   $('#plrRESub').textContent = P.re ? (P.re.semDado ? 'sem dados' : `Realizado ${fmtV(P.re.realizado, P.re)} / Meta ${fmtV(P.re.meta, P.re)}`) : 'indicador não encontrado no book';
   $('#plrBook').textContent = pct(P.book, 1); $('#plrBook').className = 'fc ' + fB; $('#plrBookSub').textContent = `Σ Valor de ${rows.length} indicador(es)`;
-  $('#plrRes').textContent = P.plr === null ? '—' : `${nf(2).format(P.plr)} - ${pct(P.plr / PLR_FATOR, 1)}`; // fator PLR (máx. 1,60) e % sobre 1,60
+  $('#plrRes').textContent = P.plr === null ? '—' : `${nf(2).format(P.plr)} - ${pct(Math.round(P.plr * 100) / 100 / PLR_FATOR, 1)}`; // fator PLR (2 casas, máx. 1,60) e % do fator exibido sobre 1,60
   $('#plrResSub').textContent = P.plr === null ? '' : `${nf(4).format(P.fRE)} × ${nf(4).format(P.book)} × 1,6 = ${nf(4).format(P.plr)}`;
 }
 function render() { if (!ROWS.length) return; $('.tabs [data-tab=emp]').classList.toggle('hidden', !ROWS.some(r => r.nivel === 'Empresa' || /^book geral/i.test(r.cargo))); ({ painel:renderPainel, ating:renderAting, print:renderPrint, comp:renderComp, emp:renderEmp })[curTab()](); }
