@@ -57,6 +57,12 @@ const fNivel = r => !S.niveis || S.niveis.has(r.nivel), fIndic = r => S.indicado
 function base() { const t = curTab(); return ROWS.filter(r => fAno(r) && fEmp(r) && fCargo(r) && (t === 'ating' ? fNivel(r) && fIndic(r) : fResp(r))); }
 const uniq = a => [...new Set(a)].sort((x, y) => x.localeCompare(y, 'pt-BR'));
 
+// lista suspensa com caixas de seleção (multisseleção); continua aberta ao marcar, fecha ao clicar fora
+function multiDrop(el, items, label, isOn, onClick) { const sc = el.querySelector('.md-list')?.scrollTop || 0; el.innerHTML = ''; el.classList.add('mdrop'); el.classList.toggle('open', S.mdOpen === el.id);
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'md-btn'; b.textContent = label; b.onclick = () => { S.mdOpen = S.mdOpen === el.id ? null : el.id; el.classList.toggle('open', S.mdOpen === el.id); }; el.appendChild(b);
+  const l = document.createElement('div'); l.className = 'md-list'; items.forEach((it, i) => { const lb = document.createElement('label'); lb.className = i ? '' : 'md-all'; const c = document.createElement('input'); c.type = 'checkbox'; c.checked = isOn(it);
+    c.onchange = () => { S.mdOpen = el.id; onClick(it); render(); }; lb.append(c, document.createTextNode(' ' + it)); l.appendChild(lb); }); el.appendChild(l); l.scrollTop = sc; }
+document.addEventListener('click', e => { if (S.mdOpen && !e.target.closest('.mdrop')) { S.mdOpen = null; document.querySelectorAll('.mdrop.open').forEach(x => x.classList.remove('open')); } });
 function btnSlicer(el, items, isOn, onClick) { el.innerHTML = ''; items.forEach(it => { const b = document.createElement('button'); b.textContent = it; b.className = isOn(it) ? 'on' : ''; b.onclick = () => { onClick(it); render(); }; el.appendChild(b); }); }
 function selSlicer(el, items, val, onCh, multiple) {
   el.innerHTML = ''; const s = document.createElement('select'); if (multiple) { s.multiple = true; s.size = Math.min(5, Math.max(3, items.length)); }
@@ -349,7 +355,7 @@ function renderComp() {
   const indsVis = uniq(ROWS.filter(r => r.ano === S.ano && r.mes === S.mes && S.cmpNiveis.has(r.nivel) && S.cmpEmps.has(r.empresa)).map(r => r.indicador)).sort((a, b) => a.localeCompare(b, 'pt'));
   if (S.cmpInds) { S.cmpInds = new Set([...S.cmpInds].filter(i => indsVis.includes(i))); if (indsVis.length && indsVis.every(i => S.cmpInds.has(i))) S.cmpInds = null; }
   const iAll = !S.cmpInds;
-  btnSlicer($('#cmpInd'), ['Todos', ...indsVis], i => i === 'Todos' ? iAll : iAll || S.cmpInds.has(i), i => { if (i === 'Todos') S.cmpInds = iAll ? new Set() : null;
+  multiDrop($('#cmpInd'), ['Todos', ...indsVis], iAll ? 'Todos' : S.cmpInds.size ? `${S.cmpInds.size} selecionado${S.cmpInds.size > 1 ? 's' : ''}` : 'Nenhum', i => i === 'Todos' ? iAll : iAll || S.cmpInds.has(i), i => { if (i === 'Todos') S.cmpInds = iAll ? new Set() : null;
     else { const s = new Set(S.cmpInds || indsVis); s.has(i) ? s.delete(i) : s.add(i); S.cmpInds = indsVis.every(x => s.has(x)) ? null : s; } });
   const all = [...S.cmpNiveis].flatMap(n => pessoasNivel(n, S.cmpInds)).filter(p => S.cmpEmps.has(p.empresa)), com = all.filter(p => p.book !== null), mNivel = media(com.map(p => p.book));
   $('#cmpSub').textContent = `· ${S.cmpNivel || '—'} · ${S.mes === 'Acumulado' ? 'Acumulado' : 'Mês ' + S.mes} ${S.ano}${S.cmpInds ? ` · ${S.cmpInds.size} indicador(es)` : ''}`;
