@@ -1,5 +1,5 @@
 /* Book de Metas – app */
-const C = BookCalc, MESES = C.MESES, EMPRESAS = ['CSC','Ferguminas','MIB','MIG','MML','SM Metais','SM Mineração'];
+const C = BookCalc, MESES = C.MESES;
 let ROWS = [], S = { ano:null, mes:null, empresa:'CSC', cargos:new Set(), resp:'Todos', nivel:'Todos', indicador:'Todos', selInd:null, atgView:'ind' };
 const charts = {};
 let LAST_SRC = null; // última fonte carregada (para o botão Atualizar)
@@ -72,7 +72,8 @@ function renderSlicers(sec) {
     const k = el.dataset.sl;
     if (k === 'ano') btnSlicer(el, anos, a => a === S.ano, a => S.ano = a);
     if (k === 'mes') btnSlicer(el, MESES, m => m === S.mes, m => S.mes = m);
-    if (k === 'empresa') { const es = uniq([...EMPRESAS, ...ROWS.map(r => r.empresa)]);
+    if (k === 'empresa') { const es = uniq(ROWS.map(r => r.empresa)); // só empresas com dados na fonte
+      if (S.empresa && !es.includes(S.empresa)) S.empresa = es[0] || null;
       // 'Todas' seleciona todas as empresas (S.empresa = null); clicar de novo volta para a última empresa escolhida
       btnSlicer(el, ['Todas', ...es], e => e === 'Todas' ? !S.empresa : e === S.empresa, e => { if (e === 'Todas') S.empresa = S.empresa ? (S.empLast = S.empresa, null) : (es.includes(S.empLast) ? S.empLast : es[0]); else { S.empresa = (S.empresa === e && curTab() === 'ating') ? null : e; if (S.empresa) S.empLast = S.empresa; } S.cargos = new Set(); S.resp = 'Todos'; }); }
     if (k === 'cargo') selSlicer(el, uniq(scope.filter(fNivel).map(r => r.cargo)), S.cargos.size === 1 ? [...S.cargos][0] : 'Todos', v => { S.cargos = v === 'Todos' ? new Set() : new Set([v]); S.resp = 'Todos'; });
