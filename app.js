@@ -313,7 +313,8 @@ function renderAting() {
 }
 function renderPrint() {
   const sec = $('#tab-print'); renderSlicers(sec); const b = base();
-  $('#printHead').textContent = `· Ano ${S.ano} · ${S.empresa || 'Todas'} · ${S.cargos.size ? [...S.cargos].filter(c => c !== MD_NONE).join(', ') || 'nenhum cargo' : 'Todos os cargos'}`;
+  { const h = $('#printHead'), per = document.createElement('span'); per.className = 'plr-per'; per.textContent = S.mes === 'Acumulado' ? `Acumulado ${S.ano}` : `${S.mes} ${S.ano}`;
+    h.textContent = '· '; h.append(per, ` · ${S.empresa || 'Todas'} · ${S.cargos.size ? [...S.cargos].filter(c => c !== MD_NONE).join(', ') || 'nenhum cargo' : 'Todos os cargos'}`); }
   $('#pt1').textContent = 'Mês: ' + S.mes;
   table($('#tblP1'), b.filter(r => r.mes === S.mes)); table($('#tblP2'), b.filter(r => r.mes === 'Acumulado'));
   kpiBook('kP1', b.filter(r => r.mes === S.mes)); kpiBook('kP2', b.filter(r => r.mes === 'Acumulado'));
