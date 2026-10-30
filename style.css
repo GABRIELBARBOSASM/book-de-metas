@@ -221,3 +221,10 @@ main,#drop{padding-bottom:calc(var(--foot-h,46px) + 16px)}
  #tab-emp .tablewrap{overflow:visible;max-height:none}#tab-emp .ind tr.plr-sub td{font-size:7.5pt}
  #tab-emp .plr-strip{margin:0 0 1.5mm;padding-bottom:1.5mm;gap:2mm}#tab-emp .plr-c{padding:1mm 2mm;border-radius:5px}#tab-emp .plr-c small{font-size:6.5pt}#tab-emp .plr-c b{font-size:12pt;margin:0}#tab-emp .plr-c em{font-size:6.5pt}#tab-emp .plr-op{font-size:10pt}
  #tab-emp{break-inside:avoid}}
+
+/* Insights */
+#tab-ins table.ind{font-size:12px}#tab-ins table.ind td small{color:var(--grey);font-size:10px}#tab-ins .cmp-chart{height:240px}#tab-ins .tablewrap{max-height:300px}
+#tab-ins .ins-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}#tab-ins .ins-grid>.panel{margin:0;min-width:0}
+#tab-ins .ins-kpis{display:grid;grid-template-columns:repeat(4,1fr)}@media(max-width:1000px){#tab-ins .ins-grid,#tab-ins .ins-kpis{grid-template-columns:1fr}}
+#tab-ins table.ind{min-width:0!important;width:100%;table-layout:fixed}#tab-ins table.ind th,#tab-ins table.ind td{padding:4px 6px}
+#tab-ins table.ind td,#tab-ins table.ind th{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#tab-ins table.ind th:first-child{width:40%}#tab-ins table.ind th:nth-child(2){width:15%}#tab-ins table.ind th:nth-child(3){width:18%}

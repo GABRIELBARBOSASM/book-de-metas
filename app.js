@@ -456,7 +456,55 @@ function empBlock(sf, mes) {
   $('#plrRes' + sf).textContent = P.plr === null ? '—' : `${nf(2).format(P.plr)} - ${pct(Math.round(P.plr * 100) / 100 / PLR_FATOR, 1)}`; // fator PLR (2 casas, máx. 1,60) e % do fator exibido sobre 1,60
   $('#plrResSub' + sf).textContent = P.plr === null ? '' : `${semRE ? '' : `Empresa ${nf(4).format(P.fRE)} × `}Book ${nf(4).format(P.book)} × Fator 1,6 = ${nf(4).format(P.plr)}`;
 }
-function render() { if (!ROWS.length) return; $('.tabs [data-tab=emp]').classList.toggle('hidden', !ROWS.some(r => r.nivel === 'Empresa' || /^book geral/i.test(r.cargo))); ({ painel:renderPainel, ating:renderAting, print:renderPrint, comp:renderComp, emp:renderEmp })[curTab()](); }
+// ---------- Insights: tendência, farol, gaps, vermelho consecutivo, melhoras/pioras (não entra na exportação) ----------
+const INS_COR = ['#a30000', '#272e32', '#e07b00', '#007024', '#5f6c77', '#f2b400', '#8e6bb8', '#2b7bb9'];
+const insKey = r => `${r.empresa}|${r.cargo}|${r.responsavel}|${r.indicador}`;
+function renderIns() {
+  const sec = $('#tab-ins'); renderSlicers(sec);
+  const es = uniq(ROWS.filter(r => r.ano === S.ano).map(r => r.empresa));
+  if (!S.insEmps) S.insEmps = new Set(es); const all = es.every(e => S.insEmps.has(e));
+  btnSlicer($('#insEmp'), ['Todas', ...es], e => e === 'Todas' ? all : S.insEmps.has(e), e => { if (e === 'Todas') S.insEmps = all ? new Set() : new Set(es); else S.insEmps.has(e) ? S.insEmps.delete(e) : S.insEmps.add(e); });
+  const rs = ROWS.filter(r => r.ano === S.ano && S.insEmps.has(r.empresa));
+  const mesesD = MESES.filter((m, i) => m !== 'Acumulado' && mesEsperado(i) && rs.some(r => r.mes === m && !r.semDado));
+  const acum = S.mes === 'Acumulado', mRef = acum ? mesesD[mesesD.length - 1] : S.mes, iRef = MESES.indexOf(mRef);
+  const cur = rs.filter(r => r.mes === S.mes && !r.semDado && r.peso > 0);
+  $('#insSub').innerHTML = `· Ano ${S.ano} · <span class="plr-per">${acum ? 'Acumulado' : S.mes} ${S.ano}</span> · ${all ? 'todas as empresas' : [...S.insEmps].sort().join(', ') || 'nenhuma empresa'} · ${cur.length} indicador(es)-pessoa com dados`;
+  const cnt = f => cur.filter(r => C.farol(r) === f).length, n = cur.length, pc = x => n ? pct(x / n, 0) : '—';
+  $('#insOk').textContent = pc(cnt('ok')); $('#insOkS').textContent = `${cnt('ok')} de ${n}`;
+  $('#insRed').textContent = pc(cnt('falha')); $('#insRedS').textContent = `${cnt('falha')} de ${n} (0% de atingimento)`;
+  const pT = cur.reduce((a, r) => a + r.peso, 0), pR = cur.filter(r => C.farol(r) !== 'ok').reduce((a, r) => a + r.peso, 0);
+  $('#insRisk').textContent = pT ? pct(pR / pT, 0) : '—'; $('#insRiskS').textContent = 'do peso total fora do verde';
+  const dz = cur.filter(r => r.desafio && r.atgDesafio !== null && r.atgInd >= 1), dn = dz.filter(r => (r.atgDesafio ?? 0) < 1).length;
+  $('#insDesf').textContent = dz.length ? `${dn} de ${dz.length}` : '—'; $('#insDesfS').textContent = 'indicadores com desafio e meta batida';
+  // tendência: Σ atgBook3 / Σ peso por empresa e mês
+  const emps = [...S.insEmps].sort((a, b) => a.localeCompare(b, 'pt-BR')), ms = MESES.filter((m, i) => m !== 'Acumulado' && mesEsperado(i));
+  const serie = e => ms.map(m => { const x = rs.filter(r => r.empresa === e && r.mes === m && !r.semDado && r.peso > 0), p = x.reduce((a, r) => a + r.peso, 0); return p ? +(x.reduce((a, r) => a + r.atgBook3, 0) / (p / 100) * 100).toFixed(1) : null; });
+  chart('chInsTrend', { type:'line', data:{ labels:ms, datasets:emps.map((e, i) => ({ label:e, data:serie(e), borderColor:INS_COR[i % 8], backgroundColor:INS_COR[i % 8], tension:.25, pointRadius:2.5, borderWidth:2, spanGaps:true })) },
+    options:{ maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{ size:10 } } }, tooltip:{ callbacks:{ label:c => `${c.dataset.label}: ${nf(1).format(c.parsed.y)}%` } } }, scales:{ y:{ min:0, ticks:{ callback:v => v + '%' } } } } });
+  // farol por empresa (barras empilhadas, % das linhas)
+  const FC = { ok:'#007024', parcial:'#e07b00', falha:'#c62828' }, FL = { ok:'Atingido', parcial:'Parcial', falha:'Não atingido' };
+  $('#insFarSub').textContent = `· ${acum ? 'Acumulado' : S.mes} ${S.ano}`;
+  chart('chInsFarol', { type:'bar', data:{ labels:emps, datasets:['ok', 'parcial', 'falha'].map(f => ({ label:FL[f], backgroundColor:FC[f], borderRadius:3, data:emps.map(e => { const x = cur.filter(r => r.empresa === e); return x.length ? +(x.filter(r => C.farol(r) === f).length / x.length * 100).toFixed(1) : 0; }) })) },
+    options:{ indexAxis:'y', maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{ size:10 } } }, tooltip:{ callbacks:{ label:c => `${c.dataset.label}: ${nf(1).format(c.parsed.x)}%` } } }, scales:{ x:{ stacked:true, max:100, ticks:{ callback:v => v + '%' } }, y:{ stacked:true } } } });
+  const hd = '<tr><th>Indicador</th><th>Empresa</th><th>Responsável</th>', vazio = m => `<tr><td class="cmp-empty">${m}</td></tr>`, esc = t => String(t).replace(/[&<]/g, c => c === '&' ? '&amp;' : '&lt;');
+  const lin = (r, extra) => `<tr><td class="l" title="${esc(r.indicador)}">${esc(r.indicador)}</td><td class="c">${esc(r.empresa)}</td><td class="l" title="${esc(r.responsavel || r.cargo)}">${esc(r.responsavel || r.cargo)}</td>${extra}</tr>`;
+  // gaps: pontos de peso perdidos = peso × (1 − atg)
+  const gap = cur.filter(r => r.atgInd < 1).map(r => ({ r, g:r.peso * (1 - Math.max(0, r.atgInd)) / 100 })).sort((a, b) => b.g - a.g).slice(0, 8);
+  $('#tblInsGap').innerHTML = gap.length ? hd + '<th>Peso</th><th>Atg.</th><th>Pts perdidos</th></tr>' + gap.map(({ r, g }) => lin(r, `<td>${r.peso}</td><td class="fc ${C.farol(r)}">${pct(r.atgInd, 1)}</td><td><b>${nf(1).format(g * 100)}</b></td>`)).join('') : vazio('Nenhum indicador abaixo da meta.');
+  // vermelho consecutivo até o mês de referência
+  const by = new Map(); rs.filter(r => r.mes !== 'Acumulado').forEach(r => { const k = insKey(r); by.has(k) || by.set(k, {}); by.get(k)[r.mes] = r; });
+  const stk = []; for (const [k, o] of by) { let c = 0; for (let i = iRef; i >= 0; i--) { const r = o[MESES[i]]; if (r && !r.semDado && C.farol(r) === 'falha') c++; else break; } if (c >= 2) stk.push({ r:o[mRef], c }); }
+  stk.sort((a, b) => b.c - a.c || b.r.peso - a.r.peso);
+  $('#tblInsStreak').innerHTML = stk.length ? hd + '<th>Peso</th><th>Meses</th></tr>' + stk.slice(0, 8).map(({ r, c }) => lin(r, `<td>${r.peso}</td><td><b class="fc falha">${c}</b> <small>(${MESES[iRef - c + 1]}–${mRef})</small></td>`)).join('') : vazio('Nenhum indicador no vermelho por 2+ meses seguidos.');
+  // melhoras/pioras: mês de referência vs anterior com dados
+  const mPrev = MESES[iRef - 1], dl = [];
+  for (const o of by.values()) { const a = o[mRef], b = o[mPrev]; if (a && b && !a.semDado && !b.semDado && a.peso > 0) dl.push({ r:a, d:a.atgInd - b.atgInd, b }); }
+  $('#insMoMSub').textContent = $('#insMoMSub2').textContent = mPrev ? `· ${mRef} vs ${mPrev}` : '';
+  const tb = (arr, m) => arr.length ? hd + `<th>${mPrev}</th><th>${mRef}</th><th>Δ p.p.</th></tr>` + arr.map(({ r, d, b }) => lin(r, `<td>${pct(b.atgInd, 0)}</td><td class="fc ${C.farol(r)}">${pct(r.atgInd, 0)}</td><td class="${d > 0 ? 'fc ok' : 'fc falha'}"><b>${d > 0 ? '+' : ''}${nf(0).format(d * 100)}</b></td>`)).join('') : vazio(m);
+  $('#tblInsUp').innerHTML = tb(dl.filter(x => x.d > 0.005).sort((a, b) => b.d - a.d).slice(0, 6), 'Sem melhoras no período.');
+  $('#tblInsDown').innerHTML = tb(dl.filter(x => x.d < -0.005).sort((a, b) => a.d - b.d).slice(0, 6), 'Sem pioras no período.');
+}
+function render() { if (!ROWS.length) return; $('.tabs [data-tab=emp]').classList.toggle('hidden', !ROWS.some(r => r.nivel === 'Empresa' || /^book geral/i.test(r.cargo))); ({ painel:renderPainel, ating:renderAting, print:renderPrint, comp:renderComp, emp:renderEmp, ins:renderIns })[curTab()](); }
 if (location.hash === '#demo' || !window.REAL_DATA) $('#demo').click();
 else if (window.REAL_DATA) (LAST_SRC = { kind:'real' }, loadAoa(REAL_DATA.meta, REAL_DATA.realizado, false, REAL_DATA.mtime));
 

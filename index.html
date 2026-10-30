@@ -3,7 +3,7 @@
 <link rel="icon" href="data:,">
 <meta name="theme-color" content="#272e32">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="style.css?v=1793358754">
+<link rel="stylesheet" href="style.css?v=1793358992">
 <script src="lib/xlsx.full.min.js"></script><script src="lib/chart.umd.min.js"></script>
 <script src="calc.js"></script><script src="demo-data.js"></script>
 </head><body>
@@ -15,6 +15,7 @@
     <button data-tab="ating" class="hidden" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg><span>Atingimento</span></button>
     <button data-tab="print"><svg viewBox="0 0 24 24"><path d="M21.5 2.5L10.5 13.5M21.5 2.5l-7 19-4-8-8-4z"/></svg><span>Envio</span></button>
     <button data-tab="emp"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-5h6v5M9 11h.01M15 11h.01"/></svg><span>Empresa</span></button>
+    <button data-tab="ins"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span>Insights</span></button>
     <button data-tab="comp"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Comparativo</span></button>
   </nav>
   <div class="side-actions">
@@ -71,6 +72,21 @@
     <div class="plr-c plr-res"><small>Atingimento PLR</small><b id="plrRes">—</b><em id="plrResSub"></em></div></div>
    <div class="tablewrap inner"><table class="ind" id="tblEmp"></table></div></div>
  </section>
+ <section id="tab-ins" class="tab hidden">
+  <div class="panel filters"><div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl grow"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
+  <div class="slicers"><div class="sl"><h4>EMPRESAS</h4><div class="btns" id="insEmp"></div></div></div></div>
+  <div class="panel"><h3 class="ptl">Insights <small id="insSub"></small></h3>
+   <div class="kpis k4 ins-kpis"><div class="kpi"><small>Indicadores no verde</small><b id="insOk">—</b><small id="insOkS" class="kname"></small></div><div class="kpi"><small>Indicadores no vermelho</small><b id="insRed">—</b><small id="insRedS" class="kname"></small></div><div class="kpi"><small>Peso em risco</small><b id="insRisk">—</b><small id="insRiskS" class="kname"></small></div><div class="kpi"><small>Meta batida, Desafio não</small><b id="insDesf">—</b><small id="insDesfS" class="kname"></small></div></div></div>
+  <div class="ins-grid">
+   <div class="panel"><h3 class="ptl">Tendência do Book por empresa <small>· Σ Valor ÷ Σ Peso, por mês</small></h3><div class="chart cmp-chart"><canvas id="chInsTrend"></canvas></div></div>
+   <div class="panel"><h3 class="ptl">Farol por empresa <small id="insFarSub"></small></h3><div class="chart cmp-chart"><canvas id="chInsFarol"></canvas></div></div></div>
+  <div class="ins-grid">
+   <div class="panel"><h3 class="ptl">Maiores gaps vs meta <small>· ponderado pelo peso</small></h3><div class="tablewrap inner"><table class="ind" id="tblInsGap"></table></div></div>
+   <div class="panel"><h3 class="ptl">Vermelho em meses consecutivos <small>· até o mês</small></h3><div class="tablewrap inner"><table class="ind" id="tblInsStreak"></table></div></div></div>
+  <div class="ins-grid">
+   <div class="panel"><h3 class="ptl">Maiores melhoras <small id="insMoMSub"></small></h3><div class="tablewrap inner"><table class="ind" id="tblInsUp"></table></div></div>
+   <div class="panel"><h3 class="ptl">Maiores pioras <small id="insMoMSub2"></small></h3><div class="tablewrap inner"><table class="ind" id="tblInsDown"></table></div></div></div>
+ </section>
  <section id="tab-comp" class="tab hidden">
   <div class="panel filters"><div class="slicers"><div class="sl"><h4>ANO</h4><div class="btns" data-sl="ano"></div></div><div class="sl grow"><h4>MÊS</h4><div class="btns" data-sl="mes"></div></div></div>
   <div class="slicers"><div class="sl"><h4>NÍVEL</h4><div class="btns" id="cmpNivel"></div></div><div class="sl"><h4>EMPRESAS</h4><div class="btns" id="cmpEmp"></div></div><div class="sl"><h4>INDICADOR</h4><div id="cmpInd"></div></div></div></div>
@@ -86,5 +102,5 @@
 
 <footer class="no-print"><img src="img/logo-smmetais.png" alt="SM Metais" width="90" height="26"><span>Informações confidenciais e de uso interno, exibidas conforme o perfil de acesso de cada usuário. Dados pessoais tratados em conformidade com a LGPD (Lei nº 13.709/2018).</span><span>© Grupo SM Metais</span></footer>
 </div></div>
-<script src="app.js?v=1793358754"></script>
+<script src="app.js?v=1793358992"></script>
 </body></html>
