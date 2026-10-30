@@ -109,7 +109,7 @@ footer{margin-top:auto}
 @media print{@page{size:A4 landscape;margin:10mm}body{background:#fff;font-size:10px}.app{display:block}.top{position:static}.panel,.panelc{box-shadow:none}.no-print,.banner,.drop,footer{display:none!important}
  .tablewrap,.chart,.card{box-shadow:none;border:1px solid #ddd}
  .top{-webkit-print-color-adjust:exact;print-color-adjust:exact}table.ind th,.f{-webkit-print-color-adjust:exact;print-color-adjust:exact}
- .tab:not(#tab-print){display:none!important}#tab-print{display:block!important}.chart{break-inside:avoid}}
+ body:not(.print-emp) .tab:not(#tab-print){display:none!important}body:not(.print-emp) #tab-print{display:block!important}body.print-emp .tab:not(#tab-emp){display:none!important}body.print-emp #tab-emp{display:block!important}.chart{break-inside:avoid}}
 /* filtros compactos: uma linha só, controles pequenos */
 .panel.filters{padding:10px 16px 4px}.panel.filters .slicers{gap:14px;margin-bottom:6px;align-items:flex-start}
 .panel.filters .sl h4{font-size:10px;margin-bottom:3px}
@@ -213,3 +213,11 @@ main,#drop{padding-bottom:calc(var(--foot-h,46px) + 16px)}
 .md-list input[type=checkbox]:checked::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
 
 .ind tr.plr-sub td{font-size:12px;color:var(--grey);background:#fbfbfc}.ind tr.plr-sub td.l{padding-left:28px}
+
+/* Exportar (Empresa): mesmas premissas do Envio — A4 paisagem, 1 página, fundo cinza, cartões brancos, sem menu/topo/filtros/rodapé */
+@media print{#tab-emp .panel{margin:0 0 3mm!important;padding:2mm 3mm!important;background:#fff!important;border:1px solid #e3e6e9!important;border-radius:6px;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #tab-emp .panel:last-child{margin-bottom:0!important}#tab-emp .ptl{font-size:12.5pt;margin:0 0 1mm}#tab-emp .ptl small{font-size:8pt}
+ #tab-emp table.ind{font-size:8.5pt}#tab-emp table.ind th,#tab-emp table.ind td{padding:1.4px 6px;line-height:1.25}#tab-emp .f{width:12px;height:12px;line-height:12px;font-size:8px}
+ #tab-emp .tablewrap{overflow:visible;max-height:none}#tab-emp .ind tr.plr-sub td{font-size:7.5pt}
+ #tab-emp .plr-strip{margin:0 0 1.5mm;padding-bottom:1.5mm;gap:2mm}#tab-emp .plr-c{padding:1mm 2mm;border-radius:5px}#tab-emp .plr-c small{font-size:6.5pt}#tab-emp .plr-c b{font-size:12pt;margin:0}#tab-emp .plr-c em{font-size:6.5pt}#tab-emp .plr-op{font-size:10pt}
+ #tab-emp{break-inside:avoid}}

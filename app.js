@@ -41,7 +41,10 @@ $('#demo').onclick = () => { LAST_SRC = { kind:'demo' }; const b = atob(window.D
 document.addEventListener('dragleave', () => $('#drop').classList.remove('over'));
 document.addEventListener('drop', e => { e.preventDefault(); $('#drop').classList.remove('over'); const f = e.dataTransfer.files[0]; if (f) readFile(f); });
 $$('.tabs button[data-tab]').forEach(b => b.onclick = () => { $$('.tabs button[data-tab]').forEach(x => x.classList.toggle('active', x === b)); $$('.tab').forEach(t => t.classList.add('hidden')); $('#tab-' + b.dataset.tab).classList.remove('hidden'); render(); });
-$('#btnPrint').onclick = () => window.print();
+$('#btnPrint').onclick = () => { document.body.classList.remove('print-emp'); window.print(); };
+$('#btnPrintEmp').onclick = () => { document.body.classList.add('print-emp'); window.print(); };
+window.addEventListener('beforeprint', () => document.body.classList.toggle('print-emp', curTab() === 'emp'));
+window.addEventListener('afterprint', () => document.body.classList.remove('print-emp')); // Envio e Empresa: mesma exportação (Imprimir → PDF, A4 paisagem, 1 página)
 // exportar: redimensiona os gráficos para o layout de impressão (1 página A4 paisagem) e restaura depois
 // A4 paisagem, margem 8mm → área útil ≈ 281mm de largura; o gráfico do Consolidado é redesenhado no tamanho de impressão (sem distorção)
 const MM = 96 / 25.4;
