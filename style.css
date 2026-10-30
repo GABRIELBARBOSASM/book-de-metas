@@ -228,3 +228,5 @@ main,#drop{padding-bottom:calc(var(--foot-h,46px) + 16px)}
 #tab-ins .ins-kpis{display:grid;grid-template-columns:repeat(4,1fr)}@media(max-width:1000px){#tab-ins .ins-grid,#tab-ins .ins-kpis{grid-template-columns:1fr}}
 #tab-ins table.ind{min-width:0!important;width:100%;table-layout:fixed}#tab-ins table.ind th,#tab-ins table.ind td{padding:4px 6px}
 #tab-ins table.ind td,#tab-ins table.ind th{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#tab-ins table.ind th:first-child{width:40%}#tab-ins table.ind th:nth-child(2){width:15%}#tab-ins table.ind th:nth-child(3){width:18%}
+#tab-ins .ins-grid .tablewrap{height:300px;max-height:300px;overflow-y:auto;overflow-x:hidden}#tab-ins .ins-grid table.ind th{position:sticky;top:0;z-index:1}#tab-ins table.ind td{padding:3px 6px}
+#tab-ins .ins-rank{margin-bottom:14px}#tab-ins .ins-rank .tablewrap{height:340px;max-height:340px;overflow-y:auto;overflow-x:hidden}#tab-ins .ins-rank table.ind th{position:sticky;top:0;z-index:1}#tab-ins .ins-rank table.ind th:first-child{width:6%}#tab-ins .ins-rank table.ind th:nth-child(2){width:22%}#tab-ins .ins-rank table.ind th:nth-child(3){width:26%}

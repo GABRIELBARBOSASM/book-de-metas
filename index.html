@@ -3,7 +3,7 @@
 <link rel="icon" href="data:,">
 <meta name="theme-color" content="#272e32">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="style.css?v=1793358992">
+<link rel="stylesheet" href="style.css?v=1793360409">
 <script src="lib/xlsx.full.min.js"></script><script src="lib/chart.umd.min.js"></script>
 <script src="calc.js"></script><script src="demo-data.js"></script>
 </head><body>
@@ -78,11 +78,12 @@
   <div class="panel"><h3 class="ptl">Insights <small id="insSub"></small></h3>
    <div class="kpis k4 ins-kpis"><div class="kpi"><small>Indicadores no verde</small><b id="insOk">—</b><small id="insOkS" class="kname"></small></div><div class="kpi"><small>Indicadores no vermelho</small><b id="insRed">—</b><small id="insRedS" class="kname"></small></div><div class="kpi"><small>Peso em risco</small><b id="insRisk">—</b><small id="insRiskS" class="kname"></small></div><div class="kpi"><small>Meta batida, Desafio não</small><b id="insDesf">—</b><small id="insDesfS" class="kname"></small></div></div></div>
   <div class="ins-grid">
-   <div class="panel"><h3 class="ptl">Tendência do Book por empresa <small>· Σ Valor ÷ Σ Peso, por mês</small></h3><div class="chart cmp-chart"><canvas id="chInsTrend"></canvas></div></div>
+   <div class="panel"><h3 class="ptl">Tendência do Book por empresa <small>· ponderado pelo peso</small></h3><div class="chart cmp-chart"><canvas id="chInsTrend"></canvas></div></div>
    <div class="panel"><h3 class="ptl">Farol por empresa <small id="insFarSub"></small></h3><div class="chart cmp-chart"><canvas id="chInsFarol"></canvas></div></div></div>
   <div class="ins-grid">
    <div class="panel"><h3 class="ptl">Maiores gaps vs meta <small>· ponderado pelo peso</small></h3><div class="tablewrap inner"><table class="ind" id="tblInsGap"></table></div></div>
    <div class="panel"><h3 class="ptl">Vermelho em meses consecutivos <small>· até o mês</small></h3><div class="tablewrap inner"><table class="ind" id="tblInsStreak"></table></div></div></div>
+  <div class="panel ins-rank"><h3 class="ptl">Ranking de atingimento por responsável <small id="insRankSub"></small></h3><div class="tablewrap inner"><table class="ind" id="tblInsRank"></table></div></div>
   <div class="ins-grid">
    <div class="panel"><h3 class="ptl">Maiores melhoras <small id="insMoMSub"></small></h3><div class="tablewrap inner"><table class="ind" id="tblInsUp"></table></div></div>
    <div class="panel"><h3 class="ptl">Maiores pioras <small id="insMoMSub2"></small></h3><div class="tablewrap inner"><table class="ind" id="tblInsDown"></table></div></div></div>
@@ -102,5 +103,5 @@
 
 <footer class="no-print"><img src="img/logo-smmetais.png" alt="SM Metais" width="90" height="26"><span>Informações confidenciais e de uso interno, exibidas conforme o perfil de acesso de cada usuário. Dados pessoais tratados em conformidade com a LGPD (Lei nº 13.709/2018).</span><span>© Grupo SM Metais</span></footer>
 </div></div>
-<script src="app.js?v=1793358992"></script>
+<script src="app.js?v=1793360409"></script>
 </body></html>
