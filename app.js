@@ -437,7 +437,12 @@ function empBlock(sf, mes) {
   let h = '<tr><th>Indicador</th><th>Peso</th><th>Und.</th><th>Meta</th><th>Realizado</th><th>Atingimento</th><th>Farol</th><th>Valor (Atg × Peso)</th></tr>';
   for (const r of srt) { const f = C.farol(r);
     h += `<tr class="${r.semDado ? 'semdado' : ''}${isRE(r.indicador) ? ' plr-re' : ''}"><td class="l">${r.indicador}</td><td>${r.peso}</td><td class="c">${r.unidade}</td><td>${fmtV(r.meta, r)}</td><td>${r.semDado ? '<i>sem dados</i>' : fmtV(r.realizado, r)}</td>
-      <td class="fc ${f}">${r.semDado ? '—' : pct(r.atgInd, 1)}</td><td class="c"><span class="f ${f}">${FAROL[f]}</span></td><td>${r.semDado ? '—' : pct(r.atgBook3, 1)}</td></tr>`; }
+      <td class="fc ${f}">${r.semDado ? '—' : pct(r.atgInd, 1)}</td><td class="c"><span class="f ${f}">${FAROL[f]}</span></td><td>${r.semDado ? '—' : pct(r.atgBook3, 1)}</td></tr>`;
+    if (semRE && isRE(r.indicador)) for (const e of ['MIB', 'MML', 'MIG', 'Ferguminas']) { // informativo: Resultado da Empresa das coligadas (não entra no cálculo do CSC)
+      const x = bookEmpresa(e, mes).find(q => isRE(q.indicador)), fx = x ? C.farol(x) : 'sem', sd = !x || x.semDado;
+      h += `<tr class="plr-sub${sd ? ' semdado' : ''}"><td class="l">↳ ${e}</td><td></td><td class="c">${x ? x.unidade : ''}</td><td>${x ? fmtV(x.meta, x) : '—'}</td><td>${sd ? '<i>sem dados</i>' : fmtV(x.realizado, x)}</td>
+        <td class="fc ${fx}">${sd ? '—' : pct(x.atgInd, 1)}</td><td class="c"><span class="f ${fx}">${FAROL[fx]}</span></td><td></td></tr>`; }
+  }
   const pT = rows.reduce((s, r) => s + r.peso, 0), fB = P.book === null ? 'sem' : C.farol({ semDado:false, atgInd:pT ? P.book / (pT / 100) : 0 });
   h += `<tr class="tot"><td class="l">Resultado do Book</td><td>${pT}</td><td></td><td></td><td></td><td></td><td class="c"><span class="f ${fB}">${FAROL[fB]}</span></td><td class="fc ${fB}"><b>${pct(P.book, 1)}</b></td></tr>`;
   $('#tblEmp' + sf).innerHTML = rows.length ? h : '<tr><td class="cmp-empty">Sem book de empresa para o período.</td></tr>';

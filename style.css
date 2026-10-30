@@ -211,3 +211,5 @@ main,#drop{padding-bottom:calc(var(--foot-h,46px) + 16px)}
 .md-list input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:14px;height:14px;margin:2px 0 0;border:1.5px solid #a30000;border-radius:3px;background:#fff;display:inline-grid;place-content:center;cursor:pointer}
 .md-list input[type=checkbox]:checked{background:#a30000}
 .md-list input[type=checkbox]:checked::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+
+.ind tr.plr-sub td{font-size:12px;color:var(--grey);background:#fbfbfc}.ind tr.plr-sub td.l{padding-left:28px}
