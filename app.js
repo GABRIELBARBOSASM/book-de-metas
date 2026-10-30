@@ -416,9 +416,9 @@ function renderComp() {
 const PLR_FATOR = 1.6, isRE = s => /resultado\s+da\s+empresa/i.test(s || '');
 function bookEmpresa(emp, mes) { const rs = ROWS.filter(r => r.ano === S.ano && r.empresa === emp && r.mes === mes);
   let b = rs.filter(r => r.nivel === 'Empresa'); if (!b.length) b = rs.filter(r => /^book geral/i.test(r.cargo)); return b; }
-function plrCalc(rows) { const re = rows.find(r => isRE(r.indicador)), real = rows.some(r => !r.semDado);
+function plrCalc(rows, semRE) { const re = rows.find(r => isRE(r.indicador)), real = rows.some(r => !r.semDado);
   const book = real ? rows.reduce((s, r) => s + (r.atgBook3 || 0), 0) : null, fRE = re && !re.semDado ? re.atgInd : null;
-  return { re, fRE, book, plr:fRE === null || book === null ? null : fRE * book * PLR_FATOR }; }
+  return { re, fRE, book, plr:book === null || (!semRE && fRE === null) ? null : (semRE ? 1 : fRE) * book * PLR_FATOR }; }
 function renderEmp() {
   const sec = $('#tab-emp'); renderSlicers(sec);
   const es = uniq(ROWS.filter(r => r.ano === S.ano && (r.nivel === 'Empresa' || /^book geral/i.test(r.cargo))).map(r => r.empresa));
@@ -430,7 +430,8 @@ function renderEmp() {
   empBlock('', mes1); empBlock('A', 'Acumulado');
 }
 function empBlock(sf, mes) {
-  const rows = S.empPlr ? bookEmpresa(S.empPlr, mes) : [], P = plrCalc(rows);
+  const rows = S.empPlr ? bookEmpresa(S.empPlr, mes) : [], semRE = S.empPlr === 'CSC', P = plrCalc(rows, semRE); // CSC: PLR = Resultado do Book × 1,6 (sem fator Resultado da Empresa)
+  { const c = $('#plrRE' + sf).closest('.plr-c'); c.classList.toggle('hidden', semRE); c.nextElementSibling.classList.toggle('hidden', semRE); }
   $('#empHead' + sf).innerHTML = `· ${S.empPlr || '—'} · <span class="plr-per">${mes === 'Acumulado' ? 'Acumulado' : 'Mês ' + mes} ${S.ano}</span>${rows[0] ? ' · ' + rows[0].cargo : ''}`;
   const srt = [...rows].sort((a, b) => isRE(b.indicador) - isRE(a.indicador) || b.peso - a.peso || a.indicador.localeCompare(b.indicador));
   let h = '<tr><th>Indicador</th><th>Peso</th><th>Und.</th><th>Meta</th><th>Realizado</th><th>Atingimento</th><th>Farol</th><th>Valor (Atg × Peso)</th></tr>';
@@ -445,7 +446,7 @@ function empBlock(sf, mes) {
   $('#plrRESub' + sf).textContent = P.re ? (P.re.semDado ? 'sem dados' : `Realizado ${fmtV(P.re.realizado, P.re)} / Meta ${fmtV(P.re.meta, P.re)}`) : 'indicador não encontrado no book';
   $('#plrBook' + sf).textContent = pct(P.book, 1); $('#plrBook' + sf).className = 'fc ' + fB; $('#plrBookSub' + sf).textContent = `Σ Valor de ${rows.length} indicador(es)`;
   $('#plrRes' + sf).textContent = P.plr === null ? '—' : `${nf(2).format(P.plr)} - ${pct(Math.round(P.plr * 100) / 100 / PLR_FATOR, 1)}`; // fator PLR (2 casas, máx. 1,60) e % do fator exibido sobre 1,60
-  $('#plrResSub' + sf).textContent = P.plr === null ? '' : `Empresa ${nf(4).format(P.fRE)} × Book ${nf(4).format(P.book)} × Fator 1,6 = ${nf(4).format(P.plr)}`;
+  $('#plrResSub' + sf).textContent = P.plr === null ? '' : `${semRE ? '' : `Empresa ${nf(4).format(P.fRE)} × `}Book ${nf(4).format(P.book)} × Fator 1,6 = ${nf(4).format(P.plr)}`;
 }
 function render() { if (!ROWS.length) return; $('.tabs [data-tab=emp]').classList.toggle('hidden', !ROWS.some(r => r.nivel === 'Empresa' || /^book geral/i.test(r.cargo))); ({ painel:renderPainel, ating:renderAting, print:renderPrint, comp:renderComp, emp:renderEmp })[curTab()](); }
 if (location.hash === '#demo' || !window.REAL_DATA) $('#demo').click();
