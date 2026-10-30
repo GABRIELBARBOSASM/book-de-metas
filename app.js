@@ -459,6 +459,10 @@ function empBlock(sf, mes) {
 // ---------- Insights: tendência, farol, gaps, vermelho consecutivo, melhoras/pioras (não entra na exportação) ----------
 const INS_COR = ['#a30000', '#272e32', '#e07b00', '#007024', '#5f6c77', '#f2b400', '#8e6bb8', '#2b7bb9'];
 const insKey = r => `${r.empresa}|${r.cargo}|${r.responsavel}|${r.indicador}`;
+// farol pelo valor exibido (arredondado a 1 casa em %), p/ 99,96% aparecer 100,0% verde e não laranja
+const insF = (v, d = 1) => v === null || v === undefined ? 'sem' : C.farol({ semDado:false, atgInd:Math.round(v * 100 * 10 ** d) / (100 * 10 ** d) });
+// Ranking por responsável (regra do Gabriel): verde > 95%; abaixo disso, faixas atuais (laranja > 0%, vermelho = 0%); sobre o valor exibido (1 casa)
+const insRankF = v => { if (v === null || v === undefined) return 'sem'; const x = Math.round(v * 1000) / 1000; return x > 0.95 ? 'ok' : x > 0 ? 'parcial' : 'falha'; };
 function renderIns() {
   const sec = $('#tab-ins'); renderSlicers(sec);
   const es = uniq(ROWS.filter(r => r.ano === S.ano).map(r => r.empresa));
@@ -469,10 +473,10 @@ function renderIns() {
   const acum = S.mes === 'Acumulado', mRef = acum ? mesesD[mesesD.length - 1] : S.mes, iRef = MESES.indexOf(mRef);
   const cur = rs.filter(r => r.mes === S.mes && !r.semDado && r.peso > 0);
   $('#insSub').innerHTML = `· Ano ${S.ano} · <span class="plr-per">${acum ? 'Acumulado' : S.mes} ${S.ano}</span> · ${all ? 'todas as empresas' : [...S.insEmps].sort().join(', ') || 'nenhuma empresa'} · ${cur.length} indicador(es)-pessoa com dados`;
-  const cnt = f => cur.filter(r => C.farol(r) === f).length, n = cur.length, pc = x => n ? pct(x / n, 0) : '—';
+  const cnt = f => cur.filter(r => insF(r.atgInd) === f).length, n = cur.length, pc = x => n ? pct(x / n, 0) : '—';
   $('#insOk').textContent = pc(cnt('ok')); $('#insOkS').textContent = `${cnt('ok')} de ${n}`;
   $('#insRed').textContent = pc(cnt('falha')); $('#insRedS').textContent = `${cnt('falha')} de ${n} (0% de atingimento)`;
-  const pT = cur.reduce((a, r) => a + r.peso, 0), pR = cur.filter(r => C.farol(r) !== 'ok').reduce((a, r) => a + r.peso, 0);
+  const pT = cur.reduce((a, r) => a + r.peso, 0), pR = cur.filter(r => insF(r.atgInd) !== 'ok').reduce((a, r) => a + r.peso, 0);
   $('#insRisk').textContent = pT ? pct(pR / pT, 0) : '—'; $('#insRiskS').textContent = 'do peso total fora do verde';
   const dz = cur.filter(r => r.desafio && r.atgDesafio !== null && r.atgInd >= 1), dn = dz.filter(r => (r.atgDesafio ?? 0) < 1).length;
   $('#insDesf').textContent = dz.length ? `${dn} de ${dz.length}` : '—'; $('#insDesfS').textContent = 'indicadores com desafio e meta batida';
@@ -484,29 +488,29 @@ function renderIns() {
   // farol por empresa (barras empilhadas, % das linhas)
   const FC = { ok:'#007024', parcial:'#e07b00', falha:'#c62828' }, FL = { ok:'Atingido', parcial:'Parcial', falha:'Não atingido' };
   $('#insFarSub').textContent = `· ${acum ? 'Acumulado' : S.mes} ${S.ano}`;
-  chart('chInsFarol', { type:'bar', data:{ labels:emps, datasets:['ok', 'parcial', 'falha'].map(f => ({ label:FL[f], backgroundColor:FC[f], borderRadius:3, data:emps.map(e => { const x = cur.filter(r => r.empresa === e); return x.length ? +(x.filter(r => C.farol(r) === f).length / x.length * 100).toFixed(1) : 0; }) })) },
+  chart('chInsFarol', { type:'bar', data:{ labels:emps, datasets:['ok', 'parcial', 'falha'].map(f => ({ label:FL[f], backgroundColor:FC[f], borderRadius:3, data:emps.map(e => { const x = cur.filter(r => r.empresa === e); return x.length ? +(x.filter(r => insF(r.atgInd) === f).length / x.length * 100).toFixed(1) : 0; }) })) },
     options:{ indexAxis:'y', maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{ size:10 } } }, tooltip:{ callbacks:{ label:c => `${c.dataset.label}: ${nf(1).format(c.parsed.x)}%` } } }, scales:{ x:{ stacked:true, max:100, ticks:{ callback:v => v + '%' } }, y:{ stacked:true } } } });
   const hd = '<tr><th>Indicador</th><th>Empresa</th><th>Responsável</th>', vazio = m => `<tr><td class="cmp-empty">${m}</td></tr>`, esc = t => String(t).replace(/[&<]/g, c => c === '&' ? '&amp;' : '&lt;');
   const lin = (r, extra) => `<tr><td class="l" title="${esc(r.indicador)}">${esc(r.indicador)}</td><td class="c">${esc(r.empresa)}</td><td class="l" title="${esc(r.responsavel || r.cargo)}">${esc(r.responsavel || r.cargo)}</td>${extra}</tr>`;
   // gaps: pontos de peso perdidos = peso × (1 − atg)
   const gap = cur.filter(r => r.atgInd < 1).map(r => ({ r, g:r.peso * (1 - Math.max(0, r.atgInd)) / 100 })).sort((a, b) => b.g - a.g).slice(0, 50);
-  $('#tblInsGap').innerHTML = gap.length ? hd + '<th>Peso</th><th>Atg.</th><th title="Pontos percentuais de peso perdidos = Peso × (1 − Atingimento)">Δ p.p.</th></tr>' + gap.map(({ r, g }) => lin(r, `<td>${r.peso}</td><td class="fc ${C.farol(r)}">${pct(r.atgInd, 1)}</td><td><b>${nf(1).format(g * 100)}</b></td>`)).join('') : vazio('Nenhum indicador abaixo da meta.');
+  $('#tblInsGap').innerHTML = gap.length ? hd + '<th>Peso</th><th>Atg.</th><th title="Pontos percentuais de peso perdidos = Peso × (1 − Atingimento)">Δ p.p.</th></tr>' + gap.map(({ r, g }) => lin(r, `<td>${r.peso}</td><td class="fc ${insF(r.atgInd)}">${pct(r.atgInd, 1)}</td><td><b>${nf(1).format(g * 100)}</b></td>`)).join('') : vazio('Nenhum indicador abaixo da meta.');
   // vermelho consecutivo até o mês de referência
   const by = new Map(); rs.filter(r => r.mes !== 'Acumulado').forEach(r => { const k = insKey(r); by.has(k) || by.set(k, {}); by.get(k)[r.mes] = r; });
-  const stk = []; for (const [k, o] of by) { let c = 0; for (let i = iRef; i >= 0; i--) { const r = o[MESES[i]]; if (r && !r.semDado && C.farol(r) === 'falha') c++; else break; } if (c >= 2) stk.push({ r:o[mRef], c }); }
+  const stk = []; for (const [k, o] of by) { let c = 0; for (let i = iRef; i >= 0; i--) { const r = o[MESES[i]]; if (r && !r.semDado && insF(r.atgInd) === 'falha') c++; else break; } if (c >= 2) stk.push({ r:o[mRef], c }); }
   stk.sort((a, b) => b.c - a.c || b.r.peso - a.r.peso);
   $('#tblInsStreak').innerHTML = stk.length ? hd + '<th>Peso</th><th>Meses</th></tr>' + stk.slice(0, 50).map(({ r, c }) => lin(r, `<td>${r.peso}</td><td><b class="fc falha">${c}</b> <small>(${MESES[iRef - c + 1]}–${mRef})</small></td>`)).join('') : vazio('Nenhum indicador no vermelho por 2+ meses seguidos.');
   // melhoras/pioras: mês de referência vs anterior com dados
   const mPrev = MESES[iRef - 1], dl = [];
   for (const o of by.values()) { const a = o[mRef], b = o[mPrev]; if (a && b && !a.semDado && !b.semDado && a.peso > 0) dl.push({ r:a, d:a.atgInd - b.atgInd, b }); }
   $('#insMoMSub').textContent = $('#insMoMSub2').textContent = mPrev ? `· ${mRef} vs ${mPrev}` : '';
-  const tb = (arr, m) => arr.length ? hd + `<th>${mPrev}</th><th>${mRef}</th><th>Δ p.p.</th></tr>` + arr.map(({ r, d, b }) => lin(r, `<td>${pct(b.atgInd, 0)}</td><td class="fc ${C.farol(r)}">${pct(r.atgInd, 0)}</td><td class="${d > 0 ? 'fc ok' : 'fc falha'}"><b>${d > 0 ? '+' : ''}${nf(0).format(d * 100)}</b></td>`)).join('') : vazio(m);
+  const tb = (arr, m) => arr.length ? hd + `<th>${mPrev}</th><th>${mRef}</th><th>Δ p.p.</th></tr>` + arr.map(({ r, d, b }) => lin(r, `<td>${pct(b.atgInd, 0)}</td><td class="fc ${insF(r.atgInd, 0)}">${pct(r.atgInd, 0)}</td><td class="${d > 0 ? 'fc ok' : 'fc falha'}"><b>${d > 0 ? '+' : ''}${nf(0).format(d * 100)}</b></td>`)).join('') : vazio(m);
   // ranking por responsável: book completo da pessoa (Σ Valor ÷ Σ Peso), exclui o book da Empresa
-  const bookP = (rr, m) => { const g = new Map(); rr.filter(r => r.mes === m && !r.semDado && r.peso > 0 && r.nivel !== 'Empresa').forEach(r => { const k = `${r.empresa}|${r.cargo}|${r.responsavel}`; const o = g.get(k) || { r, p:0, v:0 }; o.p += r.peso; o.v += r.atgBook3; g.set(k, o); }); return g; };
-  const gC = bookP(rs, S.mes), gP = acum ? new Map() : bookP(rs, mPrev), rk = [...gC].map(([k, o]) => { const b = o.v / (o.p / 100), q = gP.get(k); return { r:o.r, b, d:q ? b - q.v / (q.p / 100) : null }; }).sort((a, b) => b.b - a.b);
+  const bookP = (rr, m) => { const g = new Map(); rr.filter(r => r.mes === m && !r.semDado && r.peso > 0 && r.nivel !== 'Empresa').forEach(r => { const k = `${r.empresa}|${r.cargo}|${r.responsavel}`; const o = g.get(k) || { r, p:0, v:0, d:0, pd:0 }; o.p += r.peso; o.v += r.atgBook3; o.d += r.atgBook4 || 0; o.pd += r.pesoDesafio || 0; g.set(k, o); }); return g; };
+  const gC = bookP(rs, S.mes), gP = acum ? new Map() : bookP(rs, mPrev), rk = [...gC].map(([k, o]) => { const b = o.v / (o.p / 100), q = gP.get(k); return { r:o.r, b, d:q ? b - q.v / (q.p / 100) : null, ds:o.pd > 0 ? o.d : null }; }).sort((a, b) => b.b - a.b);
   $('#insRankSub').textContent = `· ${rk.length} responsável(is) · ponderado pelo peso${acum ? '' : mPrev ? ` · variação vs ${mPrev}` : ''}`;
-  $('#tblInsRank').innerHTML = rk.length ? '<tr><th>#</th><th>Responsável</th><th>Cargo</th><th>Empresa</th><th>Nível</th><th>Atingimento</th><th>Variação</th></tr>' + rk.map((x, i) => { const f = C.farol({ semDado:false, atgInd:x.b }), r = x.r;
-    return `<tr><td class="c">${i + 1}º</td><td class="l" title="${esc(r.responsavel)}">${esc(r.responsavel)}</td><td class="l" title="${esc(r.cargo)}">${esc(r.cargo)}</td><td class="c">${esc(r.empresa)}</td><td class="c">${esc(r.nivel)}</td><td class="fc ${f}"><b>${pct(x.b, 1)}</b></td><td class="${x.d === null ? '' : x.d > 0.0005 ? 'fc ok' : x.d < -0.0005 ? 'fc falha' : ''}">${x.d === null ? '—' : (x.d > 0 ? '+' : '') + nf(1).format(x.d * 100) + ' p.p.'}</td></tr>`; }).join('') : vazio('Sem dados no período.');
+  $('#tblInsRank').innerHTML = rk.length ? '<tr><th>#</th><th>Responsável</th><th>Cargo</th><th>Empresa</th><th>Nível</th><th>Atingimento</th><th title="Atingimento do Desafio ponderado (mesma regra do Painel); vazio se a pessoa não tem desafio">Atg. Desafio</th><th>Variação</th></tr>' + rk.map((x, i) => { const f = insRankF(x.b), r = x.r;
+    return `<tr><td class="c">${i + 1}º</td><td class="l" title="${esc(r.responsavel)}">${esc(r.responsavel)}</td><td class="l" title="${esc(r.cargo)}">${esc(r.cargo)}</td><td class="c">${esc(r.empresa)}</td><td class="c">${esc(r.nivel)}</td><td class="fc ${f}"><b>${pct(x.b, 1)}</b></td><td class="${x.ds === null ? '' : 'fc ' + insRankF(x.ds)}">${x.ds === null ? '' : pct(x.ds, 1)}</td><td class="${x.d === null ? '' : x.d > 0.0005 ? 'fc ok' : x.d < -0.0005 ? 'fc falha' : ''}">${x.d === null ? '—' : (x.d > 0 ? '+' : '') + nf(1).format(x.d * 100) + ' p.p.'}</td></tr>`; }).join('') : vazio('Sem dados no período.');
   $('#tblInsUp').innerHTML = tb(dl.filter(x => x.d > 0.005).sort((a, b) => b.d - a.d).slice(0, 50), 'Sem melhoras no período.');
   $('#tblInsDown').innerHTML = tb(dl.filter(x => x.d < -0.005).sort((a, b) => a.d - b.d).slice(0, 50), 'Sem pioras no período.');
 }
