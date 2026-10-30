@@ -22,7 +22,7 @@ function loadAoa(metaAoa, realAoa, isDemo, stamp) {
   const sh = n => n === 'Meta' ? metaAoa : realAoa;
   const meta = C.transformSheet(sh('Meta'), { filtraIndicadorNulo:true });
   const real = C.transformSheet(sh('Realizado'), { filtraIndicadorNulo:false });
-  ROWS = C.buildModel(meta, real);
+  ROWS = C.buildModel(meta, real).filter(r => String(r.cargo ?? "").trim()); // sem cargo ("Sem nome") = linhas órfãs (peso 0): fora das listas e tabelas
   if (!ROWS.length) throw new Error('Nenhuma linha de meta encontrada.');
   const anos = [...new Set(ROWS.map(r => r.ano))].sort();
   S.ano = anos.includes(String(new Date().getFullYear())) ? String(new Date().getFullYear()) : anos.at(-1);
